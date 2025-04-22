@@ -73,6 +73,7 @@ build CMakeFiles/RBT_Group_Project.dir/main.cpp.obj: CXX_COMPILER__RBT_Group_Pro
 
 build RBT_Group_Project.exe: CXX_EXECUTABLE_LINKER__RBT_Group_Project_Debug CMakeFiles/RBT_Group_Project.dir/SDL_Plotter.cpp.obj CMakeFiles/RBT_Group_Project.dir/main.cpp.obj | C$:/SDL2-2.30.8/x86_64-w64-mingw32/lib/libSDL2main.a C$:/SDL2-2.30.8/x86_64-w64-mingw32/lib/libSDL2.dll.a
   FLAGS = -g
+  LINK_FLAGS = -mconsole
   LINK_LIBRARIES = -lmingw32  -mwindows  C:/SDL2-2.30.8/x86_64-w64-mingw32/lib/libSDL2main.a  C:/SDL2-2.30.8/x86_64-w64-mingw32/lib/libSDL2.dll.a  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\RBT_Group_Project.dir
   POST_BUILD = cd .
