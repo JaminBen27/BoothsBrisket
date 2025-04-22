@@ -9,6 +9,7 @@ set(SDL2_PATH "C:/SDL2-2.30.8/x86_64-w64-mingw32")
 
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIR})
+set(CMAKE_EXE_LINKER_FLAGS "-mconsole")
 
 add_executable(RBT_Group_Project
         BearGame.h
