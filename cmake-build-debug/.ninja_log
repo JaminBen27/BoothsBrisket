@@ -1,0 +1,8 @@
+# ninja log v5
+83	4321	7670325938774486	CMakeFiles/RBT_Group_Project.dir/main.cpp.obj	fd901e78730bf327
+47	233	7670325897912987	CMakeFiles/RBT_Group_Project.dir/BearGame.cpp.obj	f3163aeaccbb1db
+4326	4752	7670325942895452	RBT_Group_Project.exe	dcb50243830df5fe
+62	3749	7670325933009811	CMakeFiles/RBT_Group_Project.dir/SDL_Plotter.cpp.obj	d5a8f2bb90f6a072
+31	644	7670326601089689	build.ninja	55aa93324ff56cdc
+8	597	7670326601089689	build.ninja	55aa93324ff56cdc
+57	514	7670326607735333	RBT_Group_Project.exe	5bc720f4f7240bea
