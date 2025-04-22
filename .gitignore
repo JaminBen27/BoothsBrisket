@@ -1,0 +1,17 @@
+# CMake build files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# If you're using a build directory
+/build/
+
+/*.o
+/*.obj
+
+# IDE stuff
+.vscode/
+.idea/
+*.sln
+*.vcxproj*
