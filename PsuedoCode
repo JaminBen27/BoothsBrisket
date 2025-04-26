@@ -1,0 +1,29 @@
+PHASE 1 and 2:
+  1: Dont move if it kills you 
+  2:  checkUnprotected piece 
+  3: If everything protected take diagonal
+  4: Furthest from lion move up 
+    if not in correct row
+  5: Shimmy if tiger gay
+PHASE 3: 
+  1: CutOff exit (keep exit perma blocked)( while inside peiece are safe 
+  2: Move when safe 
+  3: \
+
+
+CheckSafe ( point, list Tokens)
+{
+  check if jumpable(guman point, tiger point)
+}
+
+TakeDiagonal() 
+if CorrectLayer AND diagonal piece AND checkSafe 
+  move piece to diagonal 
+
+CheckProtected
+{
+  GetTigerLocatiom 
+if(adjTiger pieces are jumpable) 
+  protect()
+}
+
