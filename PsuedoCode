@@ -27,3 +27,5 @@ if(adjTiger pieces are jumpable)
   protect()
 }
 
+
+GetDiagonal(Row 
