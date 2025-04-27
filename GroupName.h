@@ -5,46 +5,6 @@
 #include "constants.h"
 
 using namespace std;
-    bool checkAdj(Token_t tiger, Point_t p) {
-
-    }
-    bool checkSuicide(const vector<Token_t>& tokens, Token_t human, Point_t newLocation) {
-        Token_t tiger = tokens[0];
-
-        if(checkAdj(tiger,newLocation)) {
-
-        }
-    }
-    inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens, Color_t color){
-        Move_t move;
-        int row, col;
-        Point_t p1,p2;
-        int m = 1, n = 3;
-        bool tigersTurn, mansTurn;
-            if(color == RED)
-            {
-                tigersTurn = true;
-                mansTurn = false;
-            }
-            else {
-                mansTurn = true;
-                tigersTurn = false;
-            }
-            if(tigersTurn){
-                p1 = tokens[0].location;
-                p1.col+=1;
-                p1.row-=1;
-                move.destination =p1;
-                move.token = tokens[0];
-            }
-            else {
-                p1 = tokens[1].location;
-                p2.row = p1.row-1;
-                p2.col = p1.col;
-                move.destination = p2;
-                move.token = tokens[1];
-            }
-        return move;
 const vector<Point_t> DIAGONAL_COORDINATES = {
         {4, 4}, {5,5}, {6,6}, {7,7}, {8,8}, {9,7}, {10,6}, {11,5}, {12,4},
         {11,3}, {10,2}, {9,1}, {8,0}, {7,1}, {6,2}, {5,3}, {4,7}
@@ -53,6 +13,16 @@ const vector<Point_t> CAGE_COORDINATES = {
         {0, 4}, {1, 3}, {2, 2}, {3, 3}, {2, 4}, {1, 5}, {2, 6}, {3, 5}, {4, 4}
 };
 
+
+Move_t humanFunction(vector<Token_t>& tokens );
+bool checkAdj(Token_t tiger, Point_t p);
+bool checkCapture(vector<Token_t> tokens, Token_t human, Point_t newLocation);
+bool checkSameToken(Token_t token1, Token_t token2);
+
+
+//---------------------------------------------------------------------
+//---------------------------------------------------------------------
+//---------------------------------------------------------------------
 Move_t tigerFunction(const vector<Token_t>&, int);
 Token_t findTiger(const vector<Token_t>&);
 bool onDiag(Token_t);
@@ -64,9 +34,9 @@ bool isOccupied(const vector<Token_t>&, Point_t);
 inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens,
                                  Color_t color) {
     static int moveCount = 0;
-    Move_t move;
+    Move_t move{};
     int row, col;
-    Point_t p1, p2;
+    Point_t p1{}, p2{};
     int m = 1, n = 3;
     bool tigersTurn, mansTurn;
     if (color == RED) {
@@ -79,15 +49,62 @@ inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens,
     if (tigersTurn) {
         move = tigerFunction(tokens, moveCount);
     } else {
-        p1 = tokens[1].location;
-        p2.row = p1.row - 1;
-        p2.col = p1.col;
-        move.destination = p2;
-        move.token = tokens[1];
+       // move = humanFunction(tokens);
     }
     return move;
 }
+inline Move_t humanFunction(vector<Token_t>& tokens ) {
+    Move_t m;
+    return m;
+}
+bool checkAdjOrthogonal(Token_t tiger, Point_t p) {
+    if(abs(tiger.location.col - p.col ) <= 1 && abs(tiger.location.row - p.row) <=0) {
+        return true;
+    }
+    return false;
+}
+bool checkAdjDiagonal(Token_t tiger, Point_t p) {
+    Token_t temp;
+    temp.location = p;
+    temp.color = BLUE;
+    if(onDiag(tiger) && onDiag(temp)) {
+        if(abs(tiger.location.col - p.col ) == 1 && abs(tiger.location.row - p.row) ==1) {
+            return true;
+        }
+    }
+    return false;
+}
+bool checkSameToken(Token_t token1, Token_t token2) {
+        return token1.location.row == token2.location.row && token1.location.col == token2.location.col;
+}
+Point_t mirror(Token_t pivot, Token_t mirroredVal) {
+    Point_t m;
+    // m.row = pivot.row - (tiger.location.row- newLocation.row);
+}
+bool checkCapture(vector<Token_t> tokens, Token_t human, Point_t newLocation) {
+    Token_t tiger = tokens[0];
+    bool capture = true;
+    if(checkAdjOrthogonal(tiger,newLocation)) {
+        int row = newLocation.row - (tiger.location.row- newLocation.row);
+        int col = newLocation.col - (tiger.location.col- newLocation.col);
+        for(int i=0; i < tokens.size(); i++) {
+            if(checkSameToken(human, tokens[i])) {
+                tokens.erase(tokens.begin() + i);
+            }
+        }
+        for(Token_t t: tokens) {
+            if(t.location.row == row && t.location.col == col) {
+                capture = false;
+            }
+        }
+    }
 
+    if(checkAdjDiagonal(tiger,newLocation)) {
+        int row = newLocation.row - (tiger.location.row- newLocation.row);
+        int col = newLocation.col - (tiger.location.col- newLocation.col);
+    }
+    return capture;
+}
 inline Move_t tigerFunction(const vector<Token_t>& tokens, int moveCount) {
 
     Move_t move;
