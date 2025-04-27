@@ -57,6 +57,8 @@ inline Move_t humanFunction(vector<Token_t>& tokens ) {
     Move_t m;
     return m;
 }
+
+//Checks a token is 1 move away from another piece
 bool checkAdj(Token_t tiger, Point_t p) {
     if(abs(tiger.location.col - p.col ) <= 1 && abs(tiger.location.row - p.row) <=0) {
         return true;
@@ -71,12 +73,15 @@ bool checkAdj(Token_t tiger, Point_t p) {
     }
     return false;
 }
-// bool checkAdjDiagonal(Token_t tiger, Point_t p) {
-//     return false;
-// }
+
+//checks if 2 tokens are the same piece
 bool checkSameToken(Token_t token1, Token_t token2) {
         return token1.location.row == token2.location.row && token1.location.col == token2.location.col;
 }
+//Mirror takes in to points and reutnrs the point reflected across the first point
+// EX: mirror ( (2,1) , (2,2) ) returns 2,3
+// works for diagonals
+// be careful not to mirror long distances
 Point_t mirror(Point_t pivot, Point_t  mirroredVal) {
     Point_t m;
      m.row = pivot.row - (mirroredVal.row- pivot.row);
@@ -84,7 +89,9 @@ Point_t mirror(Point_t pivot, Point_t  mirroredVal) {
     return m;
 
 }
-bool checkCapture(vector<Token_t> tokens, Token_t human, Point_t newLocation) {
+//checkCapture Takes in the tokens, the peice moving and the location its moving to
+// Returns true if the move results in self sacrifice
+bool checkSelfSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocation) {
     Token_t tiger = tokens[0];
     bool capture = true;
     if(checkAdj(tiger,newLocation)) {
