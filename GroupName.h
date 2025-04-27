@@ -79,7 +79,7 @@ bool checkSameToken(Token_t token1, Token_t token2) {
 }
 Point_t mirror(Token_t pivot, Token_t mirroredVal) {
     Point_t m;
-    // m.row = pivot.row - (tiger.location.row- newLocation.row);
+     m.row = pivot.location.row - (tiger.location.row- newLocation.row);
 }
 bool checkCapture(vector<Token_t> tokens, Token_t human, Point_t newLocation) {
     Token_t tiger = tokens[0];
