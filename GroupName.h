@@ -13,6 +13,7 @@ const vector<Point_t> CAGE_COORDINATES = {
         {0, 4}, {1, 3}, {2, 2}, {3, 3}, {2, 4}, {1, 5}, {2, 6}, {3, 5}, {4, 4}
 };
 
+static int TIGERMOVECOUNT = 0;
 
 Move_t humanFunction(vector<Token_t>& tokens );
 bool checkAdj(Token_t tiger, Point_t p);
@@ -23,21 +24,22 @@ bool checkSameToken(Token_t token1, Token_t token2);
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
-Move_t tigerFunction(const vector<Token_t>&, int);
+Move_t tigerFunction(const vector<Token_t>&);
 Token_t findTiger(const vector<Token_t>&);
 bool onDiag(Token_t);
 bool inCage(Token_t);
 vector<Point_t> getLegalMovesCage(const vector<Token_t>&, Token_t);
 vector<Point_t> getLegalMovesSquare(const vector<Token_t>&, Token_t);
 bool isOccupied(const vector<Token_t>&, Point_t);
+Move_t moveDiag(Point_t, int);
+Move_t moveHorz(Point_t, int);
+Move_t moveVert(Point_t, int);
 
 inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens,
                                  Color_t color) {
-    static int moveCount = 0;
     Move_t move{};
     int row, col;
     Point_t p1{}, p2{};
-    int m = 1, n = 3;
     bool tigersTurn, mansTurn;
     if (color == RED) {
         tigersTurn = true;
@@ -47,7 +49,7 @@ inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens,
         tigersTurn = false;
     }
     if (tigersTurn) {
-        move = tigerFunction(tokens, moveCount);
+        move = tigerFunction(tokens);
     } else {
        // move = humanFunction(tokens);
     }
@@ -106,11 +108,26 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens, int moveCount) {
 
     Move_t move;
     Token_t tigerToken = findTiger(tokens);
-    if (moveCount <= 8){
+    if (TIGERMOVECOUNT <= 8){
+        if (TIGERMOVECOUNT == 0) {
+            move.destination.col = (tigerToken.location.col ++);
+            move.destination.row = (tigerToken.location.row ++);
+        }
+        else if (TIGERMOVECOUNT == 1) {
+            move.destination.col = (tigerToken.location.col --);
+            move.destination.row = (tigerToken.location.row ++);
+        }
+        else if (TIGERMOVECOUNT == 2 || TIGERMOVECOUNT == 3) {
+            move.destination.col = (tigerToken.location.col ++);
+            move.destination.row = (tigerToken.location.row ++);
+        }
 
+        if (onDiag(tigerToken)) {
+
+        }
     }
 
-
+    TIGERMOVECOUNT++;
     return move;
 }
 
@@ -219,3 +236,55 @@ vector<Point_t> getLegalMoveCage(const vector<Token_t>& tokens, Token_t token){
 
     return moves;
 }
+Move_t moveDiag(Point_t location, int direction){
+    Move_t newLocation;
+    switch (direction) {
+        case 1: // up right
+            newLocation.destination.row = location.row++;
+            newLocation.destination.col = location.col++;
+            break;
+        case 2: // down left
+            newLocation.destination.row = location.row--;
+            newLocation.destination.col = location.col--;
+            break;
+        case 3: // down right
+            newLocation.destination.row = location.row++;
+            newLocation.destination.col = location.col--;
+            break;
+        case 4: // up left
+            newLocation.destination.row = location.row--;
+            newLocation.destination.col = location.col++;
+            break;
+    }
+    return newLocation;
+}
+
+Move_t moveHorz(Point_t location, int direction){
+    Move_t newLocation;
+    switch (direction){
+        case 1: // right
+            newLocation.destination.row = location.row++;
+            newLocation.destination.col = location.col;
+            break;
+        case 2: //left
+            newLocation.destination.row = location.row--;
+            newLocation.destination.col = location.col;
+            break;
+    }
+    return newLocation;
+}
+Move_t moveVert(Point_t location, int direction){
+    Move_t newLocation;
+    switch (direction){
+        case 1: // up
+            newLocation.destination.row = location.row;
+            newLocation.destination.col = location.col++;
+            break;
+        case 2: // down
+            newLocation.destination.row = location.row;
+            newLocation.destination.col = location.col--;
+            break;
+    }
+    return newLocation;
+}
+
