@@ -57,14 +57,11 @@ inline Move_t humanFunction(vector<Token_t>& tokens ) {
     Move_t m;
     return m;
 }
-bool checkAdjOrthogonal(Token_t tiger, Point_t p) {
+bool checkAdj(Token_t tiger, Point_t p) {
     if(abs(tiger.location.col - p.col ) <= 1 && abs(tiger.location.row - p.row) <=0) {
         return true;
     }
-    return false;
-}
-bool checkAdjDiagonal(Token_t tiger, Point_t p) {
-    Token_t temp;
+    Token_t temp{};
     temp.location = p;
     temp.color = BLUE;
     if(onDiag(tiger) && onDiag(temp)) {
@@ -74,34 +71,34 @@ bool checkAdjDiagonal(Token_t tiger, Point_t p) {
     }
     return false;
 }
+// bool checkAdjDiagonal(Token_t tiger, Point_t p) {
+//     return false;
+// }
 bool checkSameToken(Token_t token1, Token_t token2) {
         return token1.location.row == token2.location.row && token1.location.col == token2.location.col;
 }
-Point_t mirror(Token_t pivot, Token_t mirroredVal) {
+Point_t mirror(Point_t pivot, Point_t  mirroredVal) {
     Point_t m;
-     m.row = pivot.location.row - (tiger.location.row- newLocation.row);
+     m.row = pivot.row - (mirroredVal.row- pivot.row);
+     m.col = pivot.col - (mirroredVal.col- pivot.col);
+    return m;
+
 }
 bool checkCapture(vector<Token_t> tokens, Token_t human, Point_t newLocation) {
     Token_t tiger = tokens[0];
     bool capture = true;
-    if(checkAdjOrthogonal(tiger,newLocation)) {
-        int row = newLocation.row - (tiger.location.row- newLocation.row);
-        int col = newLocation.col - (tiger.location.col- newLocation.col);
+    if(checkAdj(tiger,newLocation)) {
+        Point_t theSpot = mirror(tiger.location,newLocation);
         for(int i=0; i < tokens.size(); i++) {
             if(checkSameToken(human, tokens[i])) {
                 tokens.erase(tokens.begin() + i);
             }
         }
         for(Token_t t: tokens) {
-            if(t.location.row == row && t.location.col == col) {
+            if(t.location.row == theSpot.row && t.location.col == theSpot.col) {
                 capture = false;
             }
         }
-    }
-
-    if(checkAdjDiagonal(tiger,newLocation)) {
-        int row = newLocation.row - (tiger.location.row- newLocation.row);
-        int col = newLocation.col - (tiger.location.col- newLocation.col);
     }
     return capture;
 }
