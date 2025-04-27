@@ -18,7 +18,7 @@ Move_t humanFunction(vector<Token_t>& tokens );
 bool checkAdj(Token_t tiger, Point_t p);
 bool checkCapture(vector<Token_t> tokens, Token_t human, Point_t newLocation);
 bool checkSameToken(Token_t token1, Token_t token2);
-
+Point_t mirror(Point_t pivot, Point_t  mirroredVal);
 
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
