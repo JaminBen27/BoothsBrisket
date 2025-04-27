@@ -2,7 +2,16 @@
 #include <cstdlib>
 #include <ctime>
 using namespace std;
+    bool checkAdj(Token_t tiger, Point_t p) {
 
+    }
+    bool checkSuicide(const vector<Token_t>& tokens, Token_t human, Point_t newLocation) {
+        Token_t tiger = tokens[0];
+
+        if(checkAdj(tiger,newLocation)) {
+
+        }
+    }
     inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens, Color_t color){
         Move_t move;
         int row, col;
