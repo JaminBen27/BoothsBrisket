@@ -6,7 +6,6 @@
 // Description : Hello World in C++, Ansi-style
 //============================================================================
 #define SDL_MAIN_HANDLED
-#include "SDL.h"
 
 #include <iostream>
 
