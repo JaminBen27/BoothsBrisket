@@ -14,6 +14,7 @@ const vector<Point_t> CAGE_COORDINATES = {
 };
 
 static int TIGERMOVECOUNT = 0;
+static int HUMAN_PROGRESSION_ROW=10;
 //GENERIC USEFUL FUNCTIONS
 double dist(Point_t p1, Point_t p2);
 Point_t mirror(Point_t pivot, Point_t  mirroredVal);
@@ -26,11 +27,12 @@ Move_t moveVert(Point_t, int);
 //------------------------------------------------------------------
 //------------------------------------------------------------------
 //HUMAN SPECIFIC FUNTIONS
-Move_t humanFunction(vector<Token_t>& tokens );
+Move_t humanFunction(const vector<Token_t>& tokens );
 bool checkAdj(Token_t tiger, Point_t p);
 bool checkCapture(vector<Token_t> tokens, Token_t human, Point_t newLocation);
 bool checkSameToken(Token_t token1, Token_t token2);
 int getProgColumn(vector<Token_t>);
+Token_t getFurthestPiece(vector<Token_t> tokens);
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
@@ -57,23 +59,46 @@ inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens,
     if (tigersTurn) {
         move = tigerFunction(tokens);
     } else {
-        cout << getProgColumn(tokens) << endl;
-       // move = humanFunction(tokens);
+        move = humanFunction(tokens);
     }
     return move;
 }
-inline Move_t humanFunction(vector<Token_t>& tokens ) {
+inline Move_t humanFunction(const vector<Token_t>& tokens ) {
+    //DIAGONAL MOVEMNET
+    // 1:UP RIGHT
+    // 2:DOWN LEFT
+    // 3:DOWN RIGHT
+    // 4:UP LEFT
+    //HORIZONTAL
+    // 1:RIGHT 2:LEFT
+    //VERTICLE
+    // 1:UP 2:DOWN
+    Token_t token = getFurthestPiece(tokens);
     Move_t m;
+    m.token = token;
+    Point_t p;
+    p.col =token.location.col;
+    p.row =token.location.row-1;
+    m.destination =p;
     return m;
 }
-int getProgColumn(vector<Token_t> tokens) {
+Token_t getFurthestPiece(vector<Token_t> tokens) {
+    Token_t tiger = tokens[0];
     tokens.erase(tokens.begin());
-    int count =0;
-    for(Token_t t: tokens) {
-        count += t.location.col;
+    Token_t furthestPiece = tokens[0];
+    for(Token_t man: tokens) {
+        if(dist(man.location,tiger.location) > dist(furthestPiece.location,tiger.location)) {
+            furthestPiece = man;
+        }
     }
-    count/=18;
-    return count+1;
+    Point_t movableLoc = furthestPiece.location;
+    movableLoc.row -=1;
+    for(Token_t man: tokens) {
+        if(man.location == movableLoc) {
+            return man;
+        }
+    }
+    return tokens[5];
 }
 double dist(Point_t p1, Point_t p2) {
     return sqrt(pow(p1.row - p2.row,2) + pow(p1.col - p2.col,2));
@@ -133,23 +158,24 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
 
     Move_t move;
     Token_t tigerToken = findTiger(tokens);
+    move.token = tigerToken;
     if (TIGERMOVECOUNT <= 8){
         if (TIGERMOVECOUNT == 0) {
-            move.destination.col = (tigerToken.location.col ++);
-            move.destination.row = (tigerToken.location.row ++);
+            move.destination.col = (++tigerToken.location.col);
+            move.destination.row = (++tigerToken.location.row);
         }
         else if (TIGERMOVECOUNT == 1) {
-            move.destination.col = (tigerToken.location.col --);
-            move.destination.row = (tigerToken.location.row ++);
+            move.destination.col = (--tigerToken.location.col);
+            move.destination.row = (++tigerToken.location.row);
         }
         else if (TIGERMOVECOUNT == 2 || TIGERMOVECOUNT == 3) {
-            move.destination.col = (tigerToken.location.col ++);
-            move.destination.row = (tigerToken.location.row ++);
+            move.destination.col = (++tigerToken.location.col);
+            move.destination.row = (++tigerToken.location.row);
         }
 
-        if (onDiag(tigerToken)) {
-
-        }
+        // if (onDiag(tigerToken)) {
+        //
+        // }
     }
 
     TIGERMOVECOUNT++;

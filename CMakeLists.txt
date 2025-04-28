@@ -3,12 +3,10 @@ project(RBT_Group_Project)
 
 set(CMAKE_CXX_STANDARD 17)
 
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake_modules)
+# Add SDL2 manually
+include_directories("C:/SDL2-2.30.8/x86_64-w64-mingw32/include")
+link_directories("C:/SDL2-2.30.8/x86_64-w64-mingw32/lib")
 
-set(SDL2_PATH "C:/SDL2-2.30.8/x86_64-w64-mingw32")
-
-find_package(SDL2 REQUIRED)
-include_directories(${SDL2_INCLUDE_DIR})
 set(CMAKE_EXE_LINKER_FLAGS "-mconsole")
 
 add_executable(RBT_Group_Project
@@ -21,11 +19,8 @@ add_executable(RBT_Group_Project
         SDL_Plotter.h
         main.cpp
         GroupName.h
-        GroupName.h
         Team.h
-        Team.h
-        Constants.h
         Constants.h
 )
 
-target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARY})
+target_link_libraries(${PROJECT_NAME} SDL2main SDL2)
