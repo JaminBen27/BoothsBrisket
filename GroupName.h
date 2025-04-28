@@ -111,7 +111,7 @@ bool checkSelfSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocati
     }
     return capture;
 }
-inline Move_t tigerFunction(const vector<Token_t>& tokens, int moveCount) {
+inline Move_t tigerFunction(const vector<Token_t>& tokens) {
 
     Move_t move;
     Token_t tigerToken = findTiger(tokens);
