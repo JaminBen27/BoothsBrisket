@@ -302,15 +302,15 @@ double pDist(Point_t a, Point_t b) {
 inline bool checkSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocation) {
     bool sacrifice = false;
     Token_t tigerToken = findTiger(tokens);
-    Point_t midpointLocation;
-    midpointLocation.col = (tigerToken.location.col + human.location.col) / 2;
-    midpointLocation.row = (tigerToken.location.row + human.location.row) / 2;
+    Token_t midpointLocation;
+    midpointLocation.location.col = (tigerToken.location.col + human.location.col) / 2;
+    midpointLocation.location.row = (tigerToken.location.row + human.location.row) / 2;
 
     if (pDist(tigerToken.location, human.location) <= sqrt(8)) {
         if (onDiag(tigerToken) && onDiag(human)) {
             if (onDiag(midpointLocation)) {
                 for (size_t i = 0; i < tokens.size(); i++) {
-                    if (tokens.at(i).location == midpointLocation) {
+                    if (tokens.at(i).location == midpointLocation.location) {
                         sacrifice = true;
                     }
                 }
@@ -318,7 +318,7 @@ inline bool checkSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLoc
         }
         else if (tigerToken.location.row == human.location.row || tigerToken.location.col == human.location.col && pDist(tigerToken.location, human.location) == 2) {
             for (size_t i = 0; i < tokens.size(); i++) {
-                if (tokens.at(i).location == midpointLocation) {
+                if (tokens.at(i).location == midpointLocation.location) {
                     sacrifice = true;
                 }
             }
