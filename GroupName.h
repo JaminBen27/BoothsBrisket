@@ -295,3 +295,35 @@ Move_t moveVert(Point_t location, int direction){
     return newLocation;
 }
 
+double pDist(Point_t a, Point_t b) {
+    return sqrt(pow(a.col - b.col, 2) + pow(a.row - b.row, 2));
+}
+
+inline bool checkSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocation) {
+    bool sacrifice = false;
+    Token_t tigerToken = findTiger(tokens);
+    Point_t midpointLocation;
+    midpointLocation.col = (tigerToken.location.col + human.location.col) / 2;
+    midpointLocation.row = (tigerToken.location.row + human.location.row) / 2;
+
+    if (pDist(tigerToken.location, human.location) <= sqrt(8)) {
+        if (onDiag(tigerToken) && onDiag(human)) {
+            if (onDiag(midpointLocation)) {
+                for (size_t i = 0; i < tokens.size(); i++) {
+                    if (tokens.at(i).location == midpointLocation) {
+                        sacrifice = true;
+                    }
+                }
+            }
+        }
+        else if (tigerToken.location.row == human.location.row || tigerToken.location.col == human.location.col && pDist(tigerToken.location, human.location) == 2) {
+            for (size_t i = 0; i < tokens.size(); i++) {
+                if (tokens.at(i).location == midpointLocation) {
+                    sacrifice = true;
+                }
+            }
+        }
+        return sacrifice;
+    }
+}
+
