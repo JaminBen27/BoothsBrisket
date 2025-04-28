@@ -1,16 +1,15 @@
-cmake_minimum_required(VERSION 3.27)
+cmake_minimum_required(VERSION 3.28)
 project(RBT_Group_Project)
 
 set(CMAKE_CXX_STANDARD 17)
 
-# SDL2 root path
-set(SDL2_PATH "C:/SDL2-2.30.9/x86_64-w64-mingw32")
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake_modules)
 
-# Add the SDL2 include directory (only up to 'include', not 'SDL2')
-include_directories(${SDL2_PATH}/include)
+set(SDL2_PATH "C:/SDL2-2.30.8/x86_64-w64-mingw32")
 
-# Add the SDL2 lib directory
-link_directories(${SDL2_PATH}/lib)
+find_package(SDL2 REQUIRED)
+include_directories(${SDL2_INCLUDE_DIR})
+set(CMAKE_EXE_LINKER_FLAGS "-mconsole")
 
 add_executable(RBT_Group_Project
         BearGame.h
@@ -22,9 +21,11 @@ add_executable(RBT_Group_Project
         SDL_Plotter.h
         main.cpp
         GroupName.h
+        GroupName.h
         Team.h
+        Team.h
+        Constants.h
         Constants.h
 )
 
-# Link the SDL2main and SDL2 libraries
-target_link_libraries(RBT_Group_Project SDL2main SDL2)
+target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARY})
