@@ -3,6 +3,7 @@
 #include <ctime>
 #include <algorithm>
 #include "constants.h"
+#include "BearGame.h"
 
 using namespace std;
 const vector<Point_t> DIAGONAL_COORDINATES = {
@@ -20,9 +21,9 @@ double dist(Point_t p1, Point_t p2);
 Point_t mirror(Point_t pivot, Point_t  mirroredVal);
 bool onDiag(Token_t);
 bool inCage(Token_t);
-Move_t moveDiag(Point_t, int);
-Move_t moveHorz(Point_t, int);
-Move_t moveVert(Point_t, int);
+Move_t moveDiag(Token_t, int);
+Move_t moveHorz(Token_t, int);
+Move_t moveVert(Token_t, int);
 //------------------------------------------------------------------
 //------------------------------------------------------------------
 //------------------------------------------------------------------
@@ -46,6 +47,8 @@ Token_t findTiger(const vector<Token_t>&);
 vector<Point_t> getLegalMovesCage(const vector<Token_t>&, Token_t);
 vector<Point_t> getLegalMovesSquare(const vector<Token_t>&, Token_t);
 bool isOccupied(const vector<Token_t>&, Point_t);
+Move_t takeHuman ( Token_t tiger, const vector<Token_t>& tokens, Point_t goal );
+pair<bool,Move_t> checkOpen (const vector<Token_t>& tokens, Token_t tiger);
 inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens,
                                  Color_t color) {
     Move_t move{};
@@ -232,38 +235,44 @@ bool checkSelfSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocati
     return capture;
 }
 inline Move_t tigerFunction(const vector<Token_t>& tokens) {
-
     Move_t move;
     Token_t tigerToken = findTiger(tokens);
     move.token = tigerToken;
-    if(TIGERMOVECOUNT%2 ==0) {
-        move.destination.col = (++tigerToken.location.col);
-        move.destination.row = (++tigerToken.location.row);
-    }
-    else {
-        move.destination.col = (--tigerToken.location.col);
-        move.destination.row = (--tigerToken.location.row);
-    }
-    // if (TIGERMOVECOUNT <= 8){
-    //     if (TIGERMOVECOUNT == 0) {
-    //         move.destination.col = (++tigerToken.location.col);
-    //         move.destination.row = (++tigerToken.location.row);
-    //     }
-    //     else if (TIGERMOVECOUNT == 1) {
-    //         move.destination.col = (--tigerToken.location.col);
-    //         move.destination.row = (++tigerToken.location.row);
-    //     }
-    //     else if (TIGERMOVECOUNT == 2 || TIGERMOVECOUNT == 3) {
-    //         move.destination.col = (++tigerToken.location.col);
-    //         move.destination.row = (++tigerToken.location.row);
-    //     }
+    if (TIGERMOVECOUNT <= 7) {
+        if (TIGERMOVECOUNT == 8) {
+            move.destination.col = (++tigerToken.location.col);
+            move.destination.row = (++tigerToken.location.row);
+        }
+        else if (TIGERMOVECOUNT == 1) {
+            move.destination.col = (--tigerToken.location.col);
+            move.destination.row = (++tigerToken.location.row);
+        }
+        else if (TIGERMOVECOUNT == 2 || TIGERMOVECOUNT == 3) {
+            move.destination.col = (++tigerToken.location.col);
+            move.destination.row = (++tigerToken.location.row);
+        }
 
-        // if (onDiag(tigerToken)) {
-        //
-        // }
-    //
+        if (onDiag(tigerToken) && TIGERMOVECOUNT >= 4 && TIGERMOVECOUNT <= 5) {
+            move.destination.col = (++tigerToken.location.col);
+            move.destination.row = (++tigerToken.location.row);
+        }
+    }
+    if ( TIGERMOVECOUNT >= 6) {
+        move = moveVert(tigerToken, 2);
 
+        if (isOccupied(tokens, move.destination)) {
+            Point_t mir = mirror(move.destination, tigerToken.location);
+
+            if ( ! isOccupied (tokens, mir)) {
+                move = takeHuman( tigerToken, tokens, mir);
+            }
+            else {
+                move = moveVert(tigerToken, 1);
+            }
+        }
+    }
     TIGERMOVECOUNT++;
+
     return move;
 }
 
@@ -286,6 +295,57 @@ bool onDiag(Token_t token){
         }
     }
     return false;
+}
+
+Move_t takeHuman ( Token_t tiger, const vector<Token_t>& tokens, Point_t goal ) {
+    Move_t move;
+    move.token = tiger;
+    move.destination = tiger.location;
+    if ( !isOccupied(tokens, goal) ) {
+        move.destination = goal;
+        return move;
+    }
+    return move;
+}
+
+pair<bool,Move_t> checkOpen (const vector<Token_t>& tokens, Token_t tiger) {
+    bool isValid = false;
+    Move_t move;
+    move.token = tiger;
+    move.destination = tiger.location;
+    //Check vert +
+    Point_t plusOne = tiger.location;
+    plusOne.row -= 2;
+    if ( !isOccupied(tokens, plusOne )) {
+        isValid = true;
+        move.destination = plusOne;
+    }
+    //Check vert -
+    Point_t minOne = tiger.location;
+    minOne.row += 2;
+    if ( !isOccupied(tokens, minOne )) {
+        isValid = true;
+        move.destination = minOne;
+    }
+    //Check Horiz +
+    Point_t horizPlusOne = tiger.location;
+    plusOne.col -= 2;
+    if ( !isOccupied(tokens, horizPlusOne )) {
+        isValid = true;
+        move.destination = horizPlusOne;
+    }
+    //Check vert -
+    Point_t horizMinOne = tiger.location;
+    horizMinOne.row += 2;
+    if ( !isOccupied(tokens, horizMinOne )) {
+        isValid = true;
+        move.destination = horizMinOne;
+    }
+
+    pair<bool, Move_t> returnPair;
+    returnPair.first = isValid;
+    returnPair.second = move;
+    return returnPair;
 }
 
 bool inCage(Token_t token){
@@ -372,8 +432,10 @@ vector<Point_t> getLegalMoveCage(const vector<Token_t>& tokens, Token_t token){
 
     return moves;
 }
-Move_t moveDiag(Point_t location, int direction){
+Move_t moveDiag(Token_t item, int direction){
+    Point_t location = item.location;
     Move_t newLocation;
+    newLocation.token = item;
     switch (direction) {
         case 1: // up right
             newLocation.destination.row = location.row++;
@@ -395,30 +457,34 @@ Move_t moveDiag(Point_t location, int direction){
     return newLocation;
 }
 
-Move_t moveHorz(Point_t location, int direction){
+Move_t moveHorz(Token_t item, int direction){
+    Point_t location = item.location;
     Move_t newLocation;
+    newLocation.token = item;
     switch (direction){
         case 1: // right
-            newLocation.destination.row = location.row++;
+            newLocation.destination.row = ++location.row;
             newLocation.destination.col = location.col;
             break;
         case 2: //left
-            newLocation.destination.row = location.row--;
+            newLocation.destination.row = --location.row;
             newLocation.destination.col = location.col;
             break;
     }
     return newLocation;
 }
-Move_t moveVert(Point_t location, int direction){
+Move_t moveVert(Token_t item, int direction){
+    Point_t location = item.location;
     Move_t newLocation;
+    newLocation.token = item;
     switch (direction){
         case 1: // up
-            newLocation.destination.row = location.row;
-            newLocation.destination.col = location.col++;
+            newLocation.destination.row = --location.row;
+            newLocation.destination.col = location.col;
             break;
         case 2: // down
-            newLocation.destination.row = location.row;
-            newLocation.destination.col = location.col--;
+            newLocation.destination.row = ++location.row;
+            newLocation.destination.col = location.col;
             break;
     }
     return newLocation;
@@ -451,4 +517,3 @@ inline bool checkSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLoc
         return sacrifice;
     }
 }
-
