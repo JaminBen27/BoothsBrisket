@@ -33,6 +33,9 @@ bool checkCapture(vector<Token_t> tokens, Token_t human, Point_t newLocation);
 bool checkSameToken(Token_t token1, Token_t token2);
 int getProgColumn(vector<Token_t>);
 Token_t getFurthestPiece(vector<Token_t> tokens);
+bool checkRowVulnrability(vector<Token_t> tokens, Token_t piece);
+Token_t checkProtected(vector<Token_t> tokens);
+Move_t protect(vector<Token_t> tokens, Token_t vulnPiece);
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
@@ -64,6 +67,9 @@ inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens,
     return move;
 }
 inline Move_t humanFunction(const vector<Token_t>& tokens ) {
+    Move_t m;
+    Token_t token;
+    Point_t p;
     //DIAGONAL MOVEMNET
     // 1:UP RIGHT
     // 2:DOWN LEFT
@@ -73,13 +79,18 @@ inline Move_t humanFunction(const vector<Token_t>& tokens ) {
     // 1:RIGHT 2:LEFT
     //VERTICLE
     // 1:UP 2:DOWN
-    Token_t token = getFurthestPiece(tokens);
-    Move_t m;
-    m.token = token;
-    Point_t p;
-    p.col =token.location.col;
-    p.row =token.location.row-1;
-    m.destination =p;
+     token = checkProtected(tokens);
+    if(!checkSameToken(token,findTiger(tokens)))
+        {
+            m = protect(tokens,token);
+        }
+    else {
+        token = getFurthestPiece(tokens);
+        p.col =token.location.col;
+        p.row =token.location.row-1;
+        m.token = token;
+        m.destination =p;
+    }
     return m;
 }
 Token_t getFurthestPiece(vector<Token_t> tokens) {
@@ -99,6 +110,49 @@ Token_t getFurthestPiece(vector<Token_t> tokens) {
         }
     }
     return tokens[5];
+}
+Move_t protect(vector<Token_t> tokens, Token_t vulnPiece) {
+    Token_t tiger = tokens[0];
+    tokens.erase(tokens.begin());
+    Move_t m;
+    m.token = tiger;
+    if(checkRowVulnrability(tokens,vulnPiece)) {
+        // //Fixing row vuln by moving token behind up.
+        for(Token_t t: tokens)
+        {
+            if(t.location.col == vulnPiece.location.col && t.location.row == vulnPiece.location.row+2) {
+                m.destination = t.location;
+                m.destination.row-=1;
+                m.token = t;
+            }
+        }
+    }
+    return m;
+}
+Token_t checkProtected(vector<Token_t> tokens) {
+    Token_t tiger = tokens[0];
+    tokens.erase(tokens.begin());
+    //Finding a token with rowVulnrability
+    for(Token_t t: tokens) {
+        if(checkRowVulnrability(tokens,t)) {
+            return t;
+        }
+    }
+    return tiger;
+}
+bool checkRowVulnrability(vector<Token_t> tokens, Token_t piece) {
+    for(int i=0;i < tokens.size(); i++) {
+        if(checkSameToken(tokens[i],piece)) {
+            tokens.erase(tokens.begin()+i);
+        }
+        for(Token_t t: tokens) {
+            if((t.location.col == piece.location.col && t.location.row == piece.location.row+1) ||
+                (t.location.col == piece.location.col && t.location.row == piece.location.row-1)) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 double dist(Point_t p1, Point_t p2) {
     return sqrt(pow(p1.row - p2.row,2) + pow(p1.col - p2.col,2));
@@ -159,24 +213,32 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
     Move_t move;
     Token_t tigerToken = findTiger(tokens);
     move.token = tigerToken;
-    if (TIGERMOVECOUNT <= 8){
-        if (TIGERMOVECOUNT == 0) {
-            move.destination.col = (++tigerToken.location.col);
-            move.destination.row = (++tigerToken.location.row);
-        }
-        else if (TIGERMOVECOUNT == 1) {
-            move.destination.col = (--tigerToken.location.col);
-            move.destination.row = (++tigerToken.location.row);
-        }
-        else if (TIGERMOVECOUNT == 2 || TIGERMOVECOUNT == 3) {
-            move.destination.col = (++tigerToken.location.col);
-            move.destination.row = (++tigerToken.location.row);
-        }
+    if(TIGERMOVECOUNT%2 ==0) {
+        move.destination.col = (++tigerToken.location.col);
+        move.destination.row = (++tigerToken.location.row);
+    }
+    else {
+        move.destination.col = (--tigerToken.location.col);
+        move.destination.row = (--tigerToken.location.row);
+    }
+    // if (TIGERMOVECOUNT <= 8){
+    //     if (TIGERMOVECOUNT == 0) {
+    //         move.destination.col = (++tigerToken.location.col);
+    //         move.destination.row = (++tigerToken.location.row);
+    //     }
+    //     else if (TIGERMOVECOUNT == 1) {
+    //         move.destination.col = (--tigerToken.location.col);
+    //         move.destination.row = (++tigerToken.location.row);
+    //     }
+    //     else if (TIGERMOVECOUNT == 2 || TIGERMOVECOUNT == 3) {
+    //         move.destination.col = (++tigerToken.location.col);
+    //         move.destination.row = (++tigerToken.location.row);
+    //     }
 
         // if (onDiag(tigerToken)) {
         //
         // }
-    }
+    //
 
     TIGERMOVECOUNT++;
     return move;
