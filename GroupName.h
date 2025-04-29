@@ -3,6 +3,7 @@
 #include <ctime>
 #include <algorithm>
 #include "constants.h"
+#include "BearGame.h"
 
 using namespace std;
 const vector<Point_t> DIAGONAL_COORDINATES = {
@@ -30,13 +31,17 @@ Move_t moveVert(Point_t, int);
 Move_t humanFunction(const vector<Token_t>& tokens );
 bool checkAdj(Token_t tiger, Point_t p);
 bool checkCapture(vector<Token_t> tokens, Token_t human, Point_t newLocation);
+bool checkSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocation);
 bool checkSameToken(Token_t token1, Token_t token2);
-int getProgColumn(vector<Token_t>);
 Token_t getFurthestPiece(vector<Token_t> tokens);
 bool checkRowVulnrability(vector<Token_t> tokens, Token_t piece);
+//Find an unprotected piece
 Token_t checkProtected(vector<Token_t> tokens);
+//Protects unprotected piece via row protection
 Move_t protect(vector<Token_t> tokens, Token_t vulnPiece);
 void updateProgressionRow(vector<Token_t> tokens);
+vector<Point_t> availableDiag(vector<Token_t> tokens);
+Move_t takeDiag(vector<Token_t> tokens);
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
@@ -87,6 +92,9 @@ inline Move_t humanFunction(const vector<Token_t>& tokens ) {
         {
             m = protect(tokens,token);
         }
+        else if(!checkSameToken( takeDiag(tokens).token,tokens[0])) {
+            m = takeDiag(tokens);
+        }
        //MOVE FURTHEST
         else {
             token = getFurthestPiece(tokens);
@@ -98,6 +106,43 @@ inline Move_t humanFunction(const vector<Token_t>& tokens ) {
         updateProgressionRow(tokens);
     }
     return m;
+}
+Move_t takeDiag(vector<Token_t> tokens) {
+    Token_t tiger = tokens[0];
+    tokens.erase(tokens.begin());
+    Move_t m;
+    m.token = tiger;
+    vector<Point_t> diagRows = availableDiag(tokens);
+    for(Point_t p: diagRows) {
+        for(Token_t t: tokens) {
+            if(t.location.col == p.col && t.location.row == p.row+1) {
+                m.token = t;
+                m.destination = p;
+                return m;
+            }
+        }
+    }
+    return m;
+}
+vector<Point_t> availableDiag(vector<Token_t> tokens) {
+    vector<Point_t> diagRows;
+
+    int index =0;
+    int availDiags =2;
+    bool validDiag= true;
+    for(Point_t p: DIAGONAL_COORDINATES) {
+        if(p.row == HUMAN_PROGRESSION_ROW) {
+            for(Token_t t: tokens) {
+                if(t.location == p) {
+                    validDiag = false;
+                }
+            }
+            if(validDiag)
+                diagRows.push_back(p);
+            validDiag = true;
+        }
+    }
+    return diagRows;
 }
 void updateProgressionRow(vector<Token_t> tokens) {
     if(HUMAN_PROGRESSION_ROW == 8) {
@@ -370,6 +415,7 @@ vector<Point_t> getLegalMoveCage(const vector<Token_t>& tokens, Token_t token){
         }
     }
 
+    return moves;
     return moves;
 }
 Move_t moveDiag(Point_t location, int direction){
