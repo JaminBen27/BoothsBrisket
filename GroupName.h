@@ -36,6 +36,7 @@ Token_t getFurthestPiece(vector<Token_t> tokens);
 bool checkRowVulnrability(vector<Token_t> tokens, Token_t piece);
 Token_t checkProtected(vector<Token_t> tokens);
 Move_t protect(vector<Token_t> tokens, Token_t vulnPiece);
+void updateProgressionRow(vector<Token_t> tokens);
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
@@ -79,37 +80,60 @@ inline Move_t humanFunction(const vector<Token_t>& tokens ) {
     // 1:RIGHT 2:LEFT
     //VERTICLE
     // 1:UP 2:DOWN
-     token = checkProtected(tokens);
-    if(!checkSameToken(token,findTiger(tokens)))
+    //PHASE 1 AND 2
+   if(HUMAN_PROGRESSION_ROW>3) {
+        token = checkProtected(tokens);
+       //CHECK PROTECTED
+        if(!checkSameToken(token,findTiger(tokens)))
         {
             m = protect(tokens,token);
         }
-    else {
-        token = getFurthestPiece(tokens);
-        p.col =token.location.col;
-        p.row =token.location.row-1;
-        m.token = token;
-        m.destination =p;
+       //MOVE FURTHEST
+        else {
+            token = getFurthestPiece(tokens);
+            p.col =token.location.col;
+            p.row =token.location.row-1;
+            m.token = token;
+            m.destination =p;
+        }
+        updateProgressionRow(tokens);
     }
     return m;
+}
+void updateProgressionRow(vector<Token_t> tokens) {
+    if(HUMAN_PROGRESSION_ROW == 8) {
+        cout << "DEBUG";
+    }
+    Token_t tiger = tokens[0];
+    tokens.erase(tokens.begin());
+    int count =0;
+    for(Token_t t: tokens) {
+        if(t.location.row == HUMAN_PROGRESSION_ROW) {
+            count++;
+        }
+    }
+    if(count ==9) {
+        HUMAN_PROGRESSION_ROW--;
+        cout << "---------------------------" << endl;
+        cout << "---------------------------" << endl;
+        cout << "---------------------------" << endl;
+        cout << "---------------------------" << endl;
+        cout << "---------------------------" << endl;
+        cout << HUMAN_PROGRESSION_ROW << endl;
+    }
 }
 Token_t getFurthestPiece(vector<Token_t> tokens) {
     Token_t tiger = tokens[0];
     tokens.erase(tokens.begin());
-    Token_t furthestPiece = tokens[0];
-    for(Token_t man: tokens) {
-        if(dist(man.location,tiger.location) > dist(furthestPiece.location,tiger.location)) {
-            furthestPiece = man;
+    Token_t furthestPiece = tiger;
+    for(int i=0; i  <9; i++) {
+        if(tokens[i].location.row == HUMAN_PROGRESSION_ROW+1) {
+            if(dist(tokens[i].location,tiger.location) > dist(furthestPiece.location,tiger.location) ) {
+                furthestPiece= tokens[i];
+            }
         }
     }
-    Point_t movableLoc = furthestPiece.location;
-    movableLoc.row -=1;
-    for(Token_t man: tokens) {
-        if(man.location == movableLoc) {
-            return man;
-        }
-    }
-    return tokens[5];
+    return furthestPiece;
 }
 Move_t protect(vector<Token_t> tokens, Token_t vulnPiece) {
     Token_t tiger = tokens[0];

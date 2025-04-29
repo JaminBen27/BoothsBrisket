@@ -905,7 +905,7 @@ class BearGame{
 	    	    	   	   p2.x = p1.x + (m-rand()%n);
 				   p2.y = p1.y + (m-rand()%n);
 
-				   cout << p1 << p2 << endl;
+				   //cout << p1 << p2 << endl;
 	           }while(!legalMove(p1,p2));
 	    	       updateTokenLocation(p1,p2, g);
 	    }
@@ -916,7 +916,7 @@ class BearGame{
 
 	    void dumpState(){
 	    		for(int i = 0; i < 19; i++){
-	    			cout << i << " " << token[i].isActive( ) << " " << token[i].isAttached() << " " << token[i].getLocation().x << " " << token[i].getLocation().y << endl;
+	    			//cout << i << " " << token[i].isActive( ) << " " << token[i].isAttached() << " " << token[i].getLocation().x << " " << token[i].getLocation().y << endl;
 	    		}
 	    }
 
@@ -1119,15 +1119,15 @@ class BearGame{
         		for(int i = 0; i < NUM_TEAMS; i++){
         			sum += team[i].score;
         		}
-        		cout << "Total = " << sum << endl;
-        		cout << endl;
+        		//cout << "Total = " << sum << endl;
+        		//cout << endl;
 
         		for(int i = 0; i < NUM_TEAMS; i++){
         			percent = 0;
         			if(team[i].score > 0){
         				percent = team[i].score/sum;
         			}
-        			cout << team[i].name << " " << team[i].score << endl;
+        			//cout << team[i].name << " " << team[i].score << endl;
         			p1.x = (START_BAR_COL) ;
         			p1.y = (START_DOT_ROW + i*(DOT_SPACE+1) );
         			p2.x = (START_BAR_COL + int(maxLength * percent));

@@ -49,7 +49,7 @@ int main() {
 
 			}
 		}
-		g.Sleep(500);
+		g.Sleep(50);
 		Move_t m;
 		 if(game.isTigersTurn()){
 		 	//Move Tiger
@@ -84,9 +84,9 @@ int main() {
 
 			auto v = game.makeVector();
 			for(auto i: v){
-				cout << "Token: " << i.color << " " << i.location.row << " " << i.location.col << endl;
+				//cout << "Token: " << i.color << " " << i.location.row << " " << i.location.col << endl;
 			}
-			cout << "Turn: "<< game.getTurn() << endl;
+			//cout << "Turn: "<< game.getTurn() << endl;
 		}
 
 
