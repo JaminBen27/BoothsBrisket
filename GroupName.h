@@ -26,6 +26,7 @@ const vector<Point_t> CAGE_COORDINATES = {
 static int TIGERMOVECOUNT = 1;
 static int HUMAN_PROGRESSION_ROW=10;
 static vector<Token_t> ILLEGALTOKENS;
+
 //GENERIC USEFUL FUNCTIONS
 double dist(Point_t p1, Point_t p2);
 Point_t mirror(Point_t pivot, Point_t  mirroredVal);
@@ -73,67 +74,68 @@ bool checkOpen (const vector<Token_t>& tokens, Point_t pt);
 pair<bool, Move_t> singleScan(vector<Token_t> tokens);
 pair<bool,Move_t> doubleScan(vector<Token_t> tokens);
 
-inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens,
-                                 Color_t color) {
-    Move_t move{};
-    int row, col;
-    Point_t p1{}, p2{};
-    bool tigersTurn, mansTurn;
-    if (color == RED) {
-        tigersTurn = true;
-        mansTurn = false;
-    } else {
-        mansTurn = true;
-        tigersTurn = false;
+inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens, Color_t c) {
+    if (c == RED) {
+        return tigerFunction(tokens);
     }
-    if (tigersTurn) {
-        move = tigerFunction(tokens);
-    } else {
-        move = humanFunction(tokens);
-    }
-    return move;
+    return humanFunction(tokens);
 }
+
+class HumanAlgorithm {
+private:
+    //Game Phases
+    static bool earlyGame;          //First Half of Board
+    static bool midGamer;           //Second Half of Board
+    static bool lateGame;           //Cage
+
+    static vector<Token_t> xVulnerabilities;    //Pieces that are vulnerable to a horizontal jump
+    static vector<Token_t> yVulnerabilities;    //Pieces that are vulnerable to a vertical jump
+
+    static vector<Token_t> frontLine;
+    static vector<Token_t> midLine;
+    static vector<Token_t> backLine;
+    //Helper Functions
+
+public:
+    //Picks a move based on various checks
+    Move_t pickMove(vector<Token_t> tokens) {
+        Move_t m;
+
+        if (yVulnerabilities.size() > 0) {
+
+
+        return m;
+    }
+};
+
 inline Move_t humanFunction(const vector<Token_t>& tokens ) {
     Move_t m;
     Token_t token;
-    Point_t p;
-    //DIAGONAL MOVEMNET
-    // 1:UP RIGHT
-    // 2:DOWN LEFT
-    // 3:DOWN RIGHT
-    // 4:UP LEFT
-    //HORIZONTAL
-    // 1:RIGHT 2:LEFT
-    //VERTICLE
-    // 1:UP 2:DOWN
-    //PHASE 1 AND 2
-    if(HUMAN_PROGRESSION_ROW>3) {
-        //CHECK PROTECTED
-        bool BADMOVE = true;
-        while(BADMOVE) {
-            //current bug is realted to checkProtectedRow RowBulnFix is not running so all the pieces are just movning up;
-            token = checkProtectedRow(tokens);
 
-            if(!checkSameToken(token,tokens[0]))
-            {
-                m = rowVulnrabilityFix(tokens,token);
-            }
-            else if(!checkSameToken( takeDiag(tokens).token,tokens[0])) {
-                m = takeDiag(tokens);
-            }
-            //MOVE FURTHEST
-            else {
-                m = getFurthestPiece(tokens);
-            }
-            if(!checkBadMove(tokens,m)) {
-                BADMOVE = false;
-            }
+
+    if (HUMAN_PROGRESSION_ROW>0) {
+        //CHECK PROTECTED
+
+        //current bug is realted to checkProtectedRow RowBulnFix is not running so all the pieces are just moving up;
+        token = checkProtectedRow(tokens);
+
+        if(!checkSameToken(token,tokens[0])) {
+            m = rowVulnrabilityFix(tokens,token);
+        }
+        else if(!checkSameToken( takeDiag(tokens).token,tokens[0])) {
+            m = takeDiag(tokens);
+        }
+        //MOVE FURTHEST
+        else {
+            m = getFurthestPiece(tokens);
         }
         ILLEGALTOKENS.clear();
         updateProgressionRow(tokens);
     }
+
     return m;
 }
+
 inline bool checkLegalToken(Token_t token) {
     for(Token_t t: ILLEGALTOKENS) {
         if(checkSameToken(t,token)) {
@@ -166,6 +168,7 @@ bool checkSelfSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocati
     }
     return sac;
 }
+
 inline bool checkSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocation) {
     bool sacrifice = false;
     Token_t tigerToken = tokens[0];
@@ -256,6 +259,7 @@ void updateProgressionRow(vector<Token_t> tokens) {
         cout << HUMAN_PROGRESSION_ROW << endl;
     }
 }
+
 //returns the furthest piece from tiger moving up
 //This needs to go through
 Move_t getFurthestPiece(vector<Token_t> tokens) {
@@ -314,6 +318,7 @@ Move_t columnDangerFix(vector<Token_t> tokens, Token_t vulnPiece) {
     }
     return m;
 }
+
 //Finds a token that is vulnrable to a vertical jump
 //If it doesnt find it RETURNS THE TIGER
 Token_t checkProtectedRow(vector<Token_t> tokens) {
@@ -327,6 +332,7 @@ Token_t checkProtectedRow(vector<Token_t> tokens) {
     }
     return tiger;
 }
+
 //TODO This could probably be combined with checkProtectedRows somehow
 Token_t checkProtectedCol(vector<Token_t> tokens) {
     Token_t tiger = tokens[0];
@@ -338,6 +344,7 @@ Token_t checkProtectedCol(vector<Token_t> tokens) {
     }
     return tiger;
 }
+
 //returns false if there is a token protecting the selected token
 bool checkRowVulnrability(vector<Token_t> tokens, Token_t piece) {
     Token_t tiger = tokens[0];
@@ -357,6 +364,7 @@ bool checkRowVulnrability(vector<Token_t> tokens, Token_t piece) {
     }
     return true;
 }
+
 //TODO Disgusting nested code can probably refactor this
 //TODO really need a function getHumanAt(Point_t)
 bool checkColumnDanger(vector<Token_t> tokens, Token_t piece) {
@@ -399,6 +407,7 @@ bool checkAdj(Token_t tiger, Point_t p) {
 bool checkSameToken(Token_t token1, Token_t token2) {
         return token1.location.row == token2.location.row && token1.location.col == token2.location.col;
 }
+
 //Mirror takes in to points and reutnrs the point reflected across the first point
 // EX: mirror ( (2,1) , (2,2) ) returns 2,3
 // works for diagonals
