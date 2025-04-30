@@ -3,7 +3,7 @@
  *FurthestPiece is poorly designd assumes tokens are sorted
  *Protect Column and protected row could probboly be merged
  *checkColumnDanger has a quintuple nest that could be refactored
- *GetHumanAt() logic would simplify code in alot of places
+ *checkHumanAt() logic would simplify code in alot of places
  *current bug is realted to checkProtectedRow RowBulnFix is not running so all the pieces are just movning up;
  *
  **/
@@ -24,9 +24,9 @@ const vector<Point_t> CAGE_COORDINATES = {
 };
 
 static int TIGERMOVECOUNT = 1;
-static int HUMAN_PROGRESSION_ROW=10;
-static vector<Token_t> ILLEGALTOKENS;
-
+static int HUMAN_PROGRESSION_ROW = 10;
+static vector<Move_t> SACMOVES;
+//Game Phases
 //GENERIC USEFUL FUNCTIONS
 double dist(Point_t p1, Point_t p2);
 Point_t mirror(Point_t pivot, Point_t  mirroredVal);
@@ -35,7 +35,9 @@ bool inCage(Token_t);
 Move_t moveDiag(Token_t, int);
 Move_t moveHorz(Token_t, int);
 Move_t moveVert(Token_t, int);
-Token_t getHumanAt(vector<Token_t> tokens);
+bool checkHumanAt(vector<Token_t> tokens, Point_t  p);
+Token_t getHumanAt(vector<Token_t> tokens, Point_t  p);
+
 bool inBounds(Point_t pt);
 //------------------------------------------------------------------
 //------------------------------------------------------------------
@@ -46,21 +48,23 @@ bool checkAdj(Token_t tiger, Point_t p);
 bool checkSelfSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocation);
 bool checkSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocation);
 bool checkSameToken(Token_t token1, Token_t token2);
-Move_t getFurthestPiece(vector<Token_t> tokens);
+vector<Move_t> getFurthestPieces(vector<Token_t> tokens,vector<Token_t>,vector<Token_t>);
 bool checkRowVulnrability(vector<Token_t> tokens, Token_t piece);
 bool checkColumnDanger(vector<Token_t> tokens, Token_t piece);
-Move_t columnDangerFix(vector<Token_t> tokens, Token_t vulnPiece);
-//Find an unprotected piece
-Token_t checkProtectedRow(vector<Token_t> tokens);
-Token_t checkProtectedCol(vector<Token_t> tokens);
+vector<Token_t> updateRowVulnrabilities(vector<Token_t> tokens,vector<Token_t>);
+vector<Move_t> fixRowVuln(vector<Token_t> tokens, vector<Token_t> rowVulns);
 
-//Protects unprotected piece via row protection
-Move_t rowVulnrabilityFix(vector<Token_t> tokens, Token_t vulnPiece);
 void updateProgressionRow(vector<Token_t> tokens);
 vector<Point_t> availableDiag(vector<Token_t> tokens);
-Move_t takeDiag(vector<Token_t> tokens);
+vector<Move_t> takeDiag(vector<Token_t> tokens);
 bool checkBadMove(vector<Token_t> tokens, Move_t m);
-bool checkLegalToken(Token_t);
+bool checkLegalToken(Move_t);
+void collectMoves(queue<Move_t>&, vector<Move_t>);
+
+vector<Token_t> getFrontRow(vector<Token_t>);
+vector<Token_t> getMiddleRow(vector<Token_t>);
+vector<Token_t> getBackRow(vector<Token_t>);
+
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
@@ -81,64 +85,118 @@ inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens, Color_t c) {
     return humanFunction(tokens);
 }
 
-class HumanAlgorithm {
-private:
-    //Game Phases
+inline Move_t humanFunction(const vector<Token_t>& tokens ) {
+    Move_t m;
+    Token_t token;
     static bool earlyGame;          //First Half of Board
     static bool midGamer;           //Second Half of Board
     static bool lateGame;           //Cage
 
-    static vector<Token_t> xVulnerabilities;    //Pieces that are vulnerable to a horizontal jump
-    static vector<Token_t> yVulnerabilities;    //Pieces that are vulnerable to a vertical jump
+    vector<Token_t> rowVulnerabilities;    //Pieces that are vulnerable to a vertical jump
+    vector<Token_t> colVulnerabilities;    //Pieces that are vulnerable to a horizontal jump
 
-    static vector<Token_t> frontLine;
-    static vector<Token_t> midLine;
-    static vector<Token_t> backLine;
-    //Helper Functions
+    vector<Token_t> frontLine;
+    vector<Token_t> midLine;
+    vector<Token_t> backLine;
 
-public:
-    //Picks a move based on various checks
-    Move_t pickMove(vector<Token_t> tokens) {
-        Move_t m;
-
-        if (yVulnerabilities.size() > 0) {
-
-
-        return m;
-    }
-};
-
-inline Move_t humanFunction(const vector<Token_t>& tokens ) {
-    Move_t m;
-    Token_t token;
+    queue<Move_t> moveList;
 
 
     if (HUMAN_PROGRESSION_ROW>0) {
         //CHECK PROTECTED
 
         //current bug is realted to checkProtectedRow RowBulnFix is not running so all the pieces are just moving up;
-        token = checkProtectedRow(tokens);
-
-        if(!checkSameToken(token,tokens[0])) {
-            m = rowVulnrabilityFix(tokens,token);
+        //token = checkProtectedRow(tokens);
+        frontLine = getFrontRow(tokens);
+        midLine = getMiddleRow(tokens);
+        backLine = getBackRow(tokens);
+        rowVulnerabilities = updateRowVulnrabilities(tokens, frontLine);
+        vector<Move_t> temp;
+        if(rowVulnerabilities.size() > 0) {
+            temp = fixRowVuln(tokens,rowVulnerabilities);
+            collectMoves(moveList,temp);
         }
-        else if(!checkSameToken( takeDiag(tokens).token,tokens[0])) {
-            m = takeDiag(tokens);
-        }
+            temp = takeDiag(tokens);
+            collectMoves(moveList,temp);
         //MOVE FURTHEST
-        else {
-            m = getFurthestPiece(tokens);
-        }
-        ILLEGALTOKENS.clear();
+            temp = getFurthestPieces(tokens,midLine,backLine);
+            collectMoves(moveList,temp);
+        m= moveList.front();
+        SACMOVES.clear();
         updateProgressionRow(tokens);
     }
 
     return m;
 }
-
-inline bool checkLegalToken(Token_t token) {
-    for(Token_t t: ILLEGALTOKENS) {
-        if(checkSameToken(t,token)) {
+vector<Move_t> fixRowVuln(vector<Token_t> tokens, vector<Token_t> rowVulns) {
+    vector<Move_t> moves;
+    Move_t m;
+    for(Token_t t: rowVulns) {
+        Point_t p = t.location;
+        p.row +=2;
+        if(checkHumanAt(tokens,p)) {
+            Token_t protectionPiece = getHumanAt(tokens,p);
+            m.token = protectionPiece;
+            p.row--;
+            m.destination = p;
+            moves.push_back(m);
+        }
+    }
+    return moves;
+}
+vector<Token_t> getFrontRow(vector<Token_t> tokens) {
+    vector<Token_t> row;
+    for(Token_t t: tokens) {
+        if(t.location.row == HUMAN_PROGRESSION_ROW) {
+            row.push_back(t);
+        }
+    }
+    return row;
+}
+vector<Token_t> getMiddleRow(vector<Token_t> tokens) {
+    vector<Token_t> row;
+    for(Token_t t: tokens) {
+        if(t.location.row == HUMAN_PROGRESSION_ROW+1) {
+            row.push_back(t);
+        }
+    }
+    return row;
+}
+vector<Token_t> getBackRow(vector<Token_t> tokens) {
+    vector<Token_t> row;
+    for(Token_t t: tokens) {
+        if(t.location.row == HUMAN_PROGRESSION_ROW+2) {
+            row.push_back(t);
+        }
+    }
+    return row;
+}
+vector<Token_t> updateRowVulnrabilities(vector<Token_t> tokens,vector<Token_t> frontRow) {
+    vector<Token_t> rowVulns;
+    for(Token_t t: frontRow) {
+        Point_t p = t.location;
+        p.row++;
+        if(!checkHumanAt(tokens,p)) {
+            rowVulns.push_back(t);
+        }
+    }
+    return rowVulns;
+}
+// vector<Token_t> updateColumnVulnrabilities(vector<Token_t> tokens,vector<Token_t> frontRow,) {
+//     vector<Token_t> rowVulns;
+//     for(Token_t t: frontRow) {
+//         Point_t p = t.location;
+//         if(!checkHumanAt(tokens,p)) {
+//             rowVulns.push_back(t);
+//         }
+//     }
+//     return rowVulns;
+// }
+inline bool checkLegalToken(Move_t move) {
+    for(Move_t m: SACMOVES) {
+        if(checkSameToken(m.token,move.token) &&
+            m.destination.row == move.destination.row &&
+            m.destination.col == move.destination.col) {
             return false;
         }
     }
@@ -150,7 +208,7 @@ bool checkBadMove(vector<Token_t> tokens, Move_t m) {
     bool selfSac = checkSelfSacrifice(tokens,m.token,m.destination);
     bool sac = checkSacrifice(tokens,m.token,m.destination);
     if(selfSac || sac) {
-        ILLEGALTOKENS.push_back(m.token);
+        SACMOVES.push_back(m);
         return true;
     }
     return false;
@@ -198,7 +256,8 @@ inline bool checkSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLoc
 
 }
 //finds a piece that can take
-Move_t takeDiag(vector<Token_t> tokens) {
+vector<Move_t> takeDiag(vector<Token_t> tokens) {
+    vector<Move_t> moves;
     Token_t tiger = tokens[0];
     tokens.erase(tokens.begin());
     Move_t m;
@@ -207,14 +266,14 @@ Move_t takeDiag(vector<Token_t> tokens) {
     vector<Point_t> diagSpots = availableDiag(tokens);
     for(Point_t p: diagSpots) {
         for(Token_t t: tokens) {
-            if(t.location.col == p.col && t.location.row == p.row+1 && checkLegalToken(t)) {
+            if(t.location.col == p.col && t.location.row == p.row+1) {
                 m.token = t;
                 m.destination = p;
-                return m;
+                moves.push_back(m);
             }
         }
     }
-    return m;
+    return moves;
 }
 //Returns a vector with the the open diagonal spots on the progression row
 vector<Point_t> availableDiag(vector<Token_t> tokens) {
@@ -262,127 +321,31 @@ void updateProgressionRow(vector<Token_t> tokens) {
 
 //returns the furthest piece from tiger moving up
 //This needs to go through
-Move_t getFurthestPiece(vector<Token_t> tokens) {
+vector<Move_t> getFurthestPieces(vector<Token_t> tokens,vector<Token_t> midRow,vector<Token_t> backRow ) {
     Token_t tiger = tokens[0];
-    tokens.erase(tokens.begin());
     Token_t furthestPiece = tiger;
     Move_t m;
-    m.token =tiger;
-    m.destination = tiger.location;
-    //TODO SHIT Code
-    //TODO need to fix this assumes that the first 9 elements are at the top
-    //TODO EIther need to sort the tokens vector or cahnge this logic
-    for(int i=0; i  <9; i++) {
-        if(tokens[i].location.row == HUMAN_PROGRESSION_ROW+1) {
-            if(dist(tokens[i].location,tiger.location) > dist(furthestPiece.location,tiger.location) && checkLegalToken(tokens[i]) ) {
-                furthestPiece= tokens[i];
-            }
-        }
-    }
-    m = moveVert(furthestPiece,1);
-    return m;
-}
-Move_t rowVulnrabilityFix(vector<Token_t> tokens, Token_t vulnPiece) {
-    Token_t tiger = tokens[0];
+    vector<Token_t> canadites;
+    vector<Move_t> moves;
+
     tokens.erase(tokens.begin());
-    Move_t m;
-    m.token = tiger;
-    m.destination = tiger.location;
-    if(checkRowVulnrability(tokens,vulnPiece)) {
-        // //Fixing row vuln by moving token behind up.
-        for(Token_t t: tokens)
-        {
-            if(t.location.col == vulnPiece.location.col && t.location.row == vulnPiece.location.row+2) {
-                m.destination = t.location;
-                m.destination.row-=1;
-                m.token = t;
-            }
-        }
-    }
-    return m;
-}
-Move_t columnDangerFix(vector<Token_t> tokens, Token_t vulnPiece) {
-    Token_t tiger = tokens[0];
-    tokens.erase(tokens.begin());
-    Move_t m;
-    m.token = tiger;
-    m.destination = tiger.location;
-    if(checkColumnDanger(tokens,vulnPiece)) {
-        // //Fixing row vuln by moving token behind up.
-        for(Token_t t: tokens)
-        {
-            if(fabs(t.location.col- vulnPiece.location.col == 1) && t.location.row == vulnPiece.location.row-1) {
-                m = moveVert(t,1);
-            }
-        }
-    }
-    return m;
-}
 
-//Finds a token that is vulnrable to a vertical jump
-//If it doesnt find it RETURNS THE TIGER
-Token_t checkProtectedRow(vector<Token_t> tokens) {
-    Token_t tiger = tokens[0];
-    //Finding a token with rowVulnrability
-    for(Token_t t: tokens) {
-
-        if(checkRowVulnrability(tokens,t)) {
-            return t;
+    for(Token_t t: midRow) {
+        Point_t p = t.location;
+        p.row+=1;
+        if(checkHumanAt(tokens,p)) {
+            canadites.push_back(t);
         }
     }
-    return tiger;
-}
-
-//TODO This could probably be combined with checkProtectedRows somehow
-Token_t checkProtectedCol(vector<Token_t> tokens) {
-    Token_t tiger = tokens[0];
-    //Finding a token with rowVulnrability
-    for(Token_t t: tokens) {
-        if(checkColumnDanger(tokens,t)) {
-            return t;
-        }
+    //TODO GET FURTHEST CALCULATOR
+    //SKIPPED FOR NOW FOR TIME SAKE
+    for(Token_t t : canadites) {
+        m.token = t;
+        m.destination = t.location;
+        m.destination.row = m.destination.row-1;
+        moves.push_back(m);
     }
-    return tiger;
-}
-
-//returns false if there is a token protecting the selected token
-bool checkRowVulnrability(vector<Token_t> tokens, Token_t piece) {
-    Token_t tiger = tokens[0];
-    tokens.erase(tokens.begin());
-    for(int i=0;i < tokens.size(); i++) {
-        if(checkSameToken(tokens[i],piece)) {
-            tokens.erase(tokens.begin()+i);
-        }
-    }
-    for(Token_t t: tokens) {
-        if(checkLegalToken(t)) {
-            if((t.location.col == piece.location.col && t.location.row == piece.location.row+1) ||
-                (t.location.col == piece.location.col && t.location.row == piece.location.row-1)) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
-//TODO Disgusting nested code can probably refactor this
-//TODO really need a function getHumanAt(Point_t)
-bool checkColumnDanger(vector<Token_t> tokens, Token_t piece) {
-    Token_t tiger = tokens[0];
-    tokens.erase(tokens.begin());
-    for(Token_t t: tokens) {
-        if(fabs(tiger.location.col - t.location.col == 1) && t.location.row == tiger.location.row) {
-            Point_t p= mirror(t.location, tiger.location);
-            if(inBounds(p)) {
-                for(Token_t t: tokens) {
-                    if(t.location.col == p.col && t.location.row == p.row) {
-                        return false;
-                    }
-                }
-            }
-        }
-    }
-    return true;
+    return moves;
 }
 double dist(Point_t p1, Point_t p2) {
     return sqrt(pow(p1.row - p2.row,2) + pow(p1.col - p2.col,2));
@@ -651,7 +614,7 @@ Move_t moveVert(Token_t item, int direction){
     return newLocation;
 }
 //TODO doesnt really work since you have to return a token
-// Token_t getHumanAt(vector<Token_t> tokens, Point_t p) {
+// Token_t checkHumanAt(vector<Token_t> tokens, Point_t p) {
 //     for(Token_t t: tokens) {
 //         if(t.location.row == p.row && t.location.col == p.col) {
 //             return t;
@@ -828,4 +791,30 @@ pair<bool,Move_t> doubleScan(vector<Token_t> tokens){
     movesReturn.first = false;
     movesReturn.second.destination = tigerToken.location;
     return movesReturn;
+}
+bool checkHumanAt(vector<Token_t> tokens, Point_t  p) {
+    for(Token_t t: tokens) {
+        if(t.location.col == p.col && t.location.row == p.row) {
+            return true;
+        }
+    }
+    return false;
+}
+Token_t getHumanAt(vector<Token_t> tokens, Point_t  p) {
+    if(checkHumanAt(tokens,p)) {
+        for(Token_t t: tokens) {
+            if(t.location.col == p.col && t.location.row == p.row) {
+                return t;
+            }
+        }
+    }
+    else {
+        cout << "ERROR: HUMAN DOESNT EXIST";
+        return tokens[0];
+    }
+}
+void collectMoves(queue<Move_t>& q, vector<Move_t> moves) {
+    for(Move_t m: moves) {
+        q.push(m);
+    }
 }
