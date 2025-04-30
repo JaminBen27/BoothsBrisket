@@ -111,6 +111,8 @@ Move_t pickRandom (const vector<Token_t>& tokens) {
             move.token.color = tokens[i].color;
             move.token.location.row = tokens[i].location.row;
             move.token.location.col = tokens[i].location.col;
+            move.destination.row = tokens[i].location.row;
+            move.destination.col = tokens[i].location.col;
         } while (move.token.color == RED);
 
         int direction = rand() % 4;
@@ -124,11 +126,10 @@ Move_t pickRandom (const vector<Token_t>& tokens) {
             move.destination.row = move.token.location.row - 1;
         }
     } while (checkLegalMove(tokens, move) == false);
-    cout << "Random: ";
     return move;
 }
 
-inline Move_t humanFunction(const vector<Token_t>& tokens ) {
+inline Move_t humanFunction(const vector<Token_t>& tokens) {
     Move_t m;
     Token_t token;
     static bool earlyGame;          //First Half of Board
