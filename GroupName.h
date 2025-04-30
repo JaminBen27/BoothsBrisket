@@ -674,11 +674,18 @@ pair<bool, Move_t> singleScan(vector<Token_t> tokens){
     movesReturn.second.token = tigerToken;
     double tolerance = 0.0001;
 
-    if (onDiag(tigerToken)){
-        for (int i = 0; i < DIAGONAL_COORDINATES.size(); i++){
+    if (onDiag(tigerToken)) {
+        for (int i = 0; i < DIAGONAL_COORDINATES.size(); i++) {
             if (abs(dist(tigerToken.location,
                          DIAGONAL_COORDINATES[i]) - sqrt(2)) < tolerance) {
-                singleScan
+                if (checkOpen(tokens, DIAGONAL_COORDINATES[i])) {
+                    movesReturn.first = true;
+                    movesReturn.second.destination = DIAGONAL_COORDINATES[i];
+                    if (inBounds(movesReturn.second.destination) &&
+                        !(movesReturn.second.token == tigerToken)) {
+                        return movesReturn;
+                    }
+                }
             }
         }
     }
