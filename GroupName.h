@@ -1,3 +1,12 @@
+/*TODO
+ *FIX failsafe being tigers position
+ *FurthestPiece is poorly designd assumes tokens are sorted
+ *Protect Column and protected row could probboly be merged
+ *checkColumnDanger has a quintuple nest that could be refactored
+ *GetHumanAt() logic would simplify code in alot of places
+ *current bug is realted to checkProtectedRow RowBulnFix is not running so all the pieces are just movning up;
+ *
+ **/
 #include <vector>
 #include <cstdlib>
 #include <ctime>
@@ -39,10 +48,13 @@ bool checkSameToken(Token_t token1, Token_t token2);
 Move_t getFurthestPiece(vector<Token_t> tokens);
 bool checkRowVulnrability(vector<Token_t> tokens, Token_t piece);
 bool checkColumnDanger(vector<Token_t> tokens, Token_t piece);
+Move_t columnDangerFix(vector<Token_t> tokens, Token_t vulnPiece);
 //Find an unprotected piece
-Token_t checkProtected(vector<Token_t> tokens);
+Token_t checkProtectedRow(vector<Token_t> tokens);
+Token_t checkProtectedCol(vector<Token_t> tokens);
+
 //Protects unprotected piece via row protection
-Move_t protect(vector<Token_t> tokens, Token_t vulnPiece);
+Move_t rowVulnrabilityFix(vector<Token_t> tokens, Token_t vulnPiece);
 void updateProgressionRow(vector<Token_t> tokens);
 vector<Point_t> availableDiag(vector<Token_t> tokens);
 Move_t takeDiag(vector<Token_t> tokens);
@@ -93,13 +105,15 @@ inline Move_t humanFunction(const vector<Token_t>& tokens ) {
     // 1:UP 2:DOWN
     //PHASE 1 AND 2
     if(HUMAN_PROGRESSION_ROW>3) {
-        token = checkProtected(tokens);
         //CHECK PROTECTED
         bool BADMOVE = true;
         while(BADMOVE) {
-            if(!checkSameToken(token,findTiger(tokens)))
+            //current bug is realted to checkProtectedRow RowBulnFix is not running so all the pieces are just movning up;
+            token = checkProtectedRow(tokens);
+
+            if(!checkSameToken(token,tokens[0]))
             {
-                m = protect(tokens,token);
+                m = rowVulnrabilityFix(tokens,token);
             }
             else if(!checkSameToken( takeDiag(tokens).token,tokens[0])) {
                 m = takeDiag(tokens);
@@ -151,7 +165,7 @@ bool checkSelfSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocati
 }
 inline bool checkSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocation) {
     bool sacrifice = false;
-    Token_t tigerToken = findTiger(tokens);
+    Token_t tigerToken = tokens[0];
     Token_t midpointLocation;
     midpointLocation.location.col = (tigerToken.location.col + human.location.col) / 2;
     midpointLocation.location.row = (tigerToken.location.row + human.location.row) / 2;
@@ -261,7 +275,7 @@ Move_t getFurthestPiece(vector<Token_t> tokens) {
     m = moveVert(furthestPiece,1);
     return m;
 }
-Move_t protect(vector<Token_t> tokens, Token_t vulnPiece) {
+Move_t rowVulnrabilityFix(vector<Token_t> tokens, Token_t vulnPiece) {
     Token_t tiger = tokens[0];
     tokens.erase(tokens.begin());
     Move_t m;
@@ -280,16 +294,42 @@ Move_t protect(vector<Token_t> tokens, Token_t vulnPiece) {
     }
     return m;
 }
+Move_t columnDangerFix(vector<Token_t> tokens, Token_t vulnPiece) {
+    Token_t tiger = tokens[0];
+    tokens.erase(tokens.begin());
+    Move_t m;
+    m.token = tiger;
+    m.destination = tiger.location;
+    if(checkColumnDanger(tokens,vulnPiece)) {
+        // //Fixing row vuln by moving token behind up.
+        for(Token_t t: tokens)
+        {
+            if(fabs(t.location.col- vulnPiece.location.col == 1) && t.location.row == vulnPiece.location.row-1) {
+                m = moveVert(t,1);
+            }
+        }
+    }
+    return m;
+}
 //Finds a token that is vulnrable to a vertical jump
 //If it doesnt find it RETURNS THE TIGER
-Token_t checkProtected(vector<Token_t> tokens) {
+Token_t checkProtectedRow(vector<Token_t> tokens) {
+    Token_t tiger = tokens[0];
+    //Finding a token with rowVulnrability
+    for(Token_t t: tokens) {
+
+        if(checkRowVulnrability(tokens,t)) {
+            return t;
+        }
+    }
+    return tiger;
+}
+//TODO This could probably be combined with checkProtectedRows somehow
+Token_t checkProtectedCol(vector<Token_t> tokens) {
     Token_t tiger = tokens[0];
     //Finding a token with rowVulnrability
     for(Token_t t: tokens) {
         if(checkColumnDanger(tokens,t)) {
-            return t;
-        }
-        if(checkRowVulnrability(tokens,t)) {
             return t;
         }
     }
@@ -309,17 +349,26 @@ bool checkRowVulnrability(vector<Token_t> tokens, Token_t piece) {
             if((t.location.col == piece.location.col && t.location.row == piece.location.row+1) ||
                 (t.location.col == piece.location.col && t.location.row == piece.location.row-1)) {
                 return false;
-                }
+            }
         }
     }
     return true;
 }
+//TODO Disgusting nested code can probably refactor this
+//TODO really need a function getHumanAt(Point_t)
 bool checkColumnDanger(vector<Token_t> tokens, Token_t piece) {
     Token_t tiger = tokens[0];
     tokens.erase(tokens.begin());
     for(Token_t t: tokens) {
         if(fabs(tiger.location.col - t.location.col == 1) && t.location.row == tiger.location.row) {
             Point_t p= mirror(t.location, tiger.location);
+            if(inBounds(p)) {
+                for(Token_t t: tokens) {
+                    if(t.location.col == p.col && t.location.row == p.row) {
+                        return false;
+                    }
+                }
+            }
         }
     }
     return true;
@@ -591,33 +640,6 @@ Move_t moveVert(Token_t item, int direction){
 //     return tokens[0];
 // }
 
-inline bool checkSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocation) {
-    bool sacrifice = false;
-    Token_t tigerToken = tokens[0];
-    Token_t midpointLocation;
-    midpointLocation.location.col = (tigerToken.location.col + human.location.col) / 2;
-    midpointLocation.location.row = (tigerToken.location.row + human.location.row) / 2;
-
-    if (dist(tigerToken.location, human.location) <= sqrt(8)) {
-        if (onDiag(tigerToken) && onDiag(human)) {
-            if (onDiag(midpointLocation)) {
-                for (size_t i = 0; i < tokens.size(); i++) {
-                    if (tokens.at(i).location == midpointLocation.location) {
-                        sacrifice = true;
-                    }
-                }
-            }
-        }
-        else if (tigerToken.location.row == human.location.row || tigerToken.location.col == human.location.col && dist(tigerToken.location, human.location) == 2) {
-            for (size_t i = 0; i < tokens.size(); i++) {
-                if (tokens.at(i).location == midpointLocation.location) {
-                    sacrifice = true;
-                }
-            }
-        }
-        return sacrifice;
-    }
-}
 
 bool inBounds(Point_t pt){
     for (int i = 0; i < CAGE_COORDINATES.size(); i++){
