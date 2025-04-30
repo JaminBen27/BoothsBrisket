@@ -477,14 +477,15 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
         }
     }
     if ( TIGERMOVECOUNT >= 6) {
-        pair<bool, Move_t> scanning;
-        scanning = singleScan(tokens);
+        pair<bool, Move_t> scanning = singleScan(tokens);
         if(scanning.first == true){
+            cout << "found target" << endl ;
             move.destination = scanning.second.destination;
             if (isOccupied(tokens, move.destination)){
                 if (checkOpen(tokens, move.destination)){
                     Point_t mir = mirror(move.destination, tigerToken.location);
                     move = takeHuman(tigerToken, tokens, mir);
+                    cout << "die die die" << endl ;
                 } else {
                     move = moveVert(tigerToken, 1);
                 }
@@ -498,10 +499,14 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
         }
 
     }
-
-
     TIGERMOVECOUNT++;
-    return move;
+    if ( inBounds(move.destination)) {
+        return move;
+    }
+    else {
+        move = move = moveVert(tigerToken, 1);
+        return move;
+    }
 }
 
 bool onDiag(Token_t token){
@@ -722,8 +727,7 @@ pair<bool, Move_t> singleScan(vector<Token_t> tokens){
                 if (checkOpen(tokens, DIAGONAL_COORDINATES[i])) {
                     movesReturn.first = true;
                     movesReturn.second.destination = DIAGONAL_COORDINATES[i];
-                    if (inBounds(movesReturn.second.destination) &&
-                        !(movesReturn.second.token == tigerToken)) {
+                    if (inBounds(movesReturn.second.destination)) {
                         return movesReturn;
                     }
                 }
@@ -737,8 +741,7 @@ pair<bool, Move_t> singleScan(vector<Token_t> tokens){
     if(checkOpen(tokens, tempMove)){
         movesReturn.first = true;
         movesReturn.second.destination = tempMove;
-        if(inBounds(movesReturn.second.destination) &&
-           !(movesReturn.second.token == tigerToken)){
+        if(inBounds(movesReturn.second.destination)){
             return movesReturn;
         }
     }
@@ -749,8 +752,7 @@ pair<bool, Move_t> singleScan(vector<Token_t> tokens){
     if(checkOpen(tokens, tempMove)){
         movesReturn.first = true;
         movesReturn.second.destination = tempMove;
-        if(inBounds(movesReturn.second.destination) &&
-           !(movesReturn.second.token == tigerToken)){
+        if(inBounds(movesReturn.second.destination)){
             return movesReturn;
         }
     }
@@ -761,8 +763,7 @@ pair<bool, Move_t> singleScan(vector<Token_t> tokens){
     if(checkOpen(tokens, tempMove)){
         movesReturn.first = true;
         movesReturn.second.destination = tempMove;
-        if(inBounds(movesReturn.second.destination) &&
-           !(movesReturn.second.token == tigerToken)){
+        if(inBounds(movesReturn.second.destination)){
             return movesReturn;
         }
     }
@@ -773,8 +774,7 @@ pair<bool, Move_t> singleScan(vector<Token_t> tokens){
     if(checkOpen(tokens, tempMove)){
         movesReturn.first = true;
         movesReturn.second.destination = tempMove;
-        if(inBounds(movesReturn.second.destination) &&
-           !(movesReturn.second.token == tigerToken)){
+        if(inBounds(movesReturn.second.destination)){
             return movesReturn;
         }
     }
@@ -861,6 +861,7 @@ pair<bool,Move_t> doubleScan(vector<Token_t> tokens){
     movesReturn.second.destination = tigerToken.location;
     return movesReturn;
 }
+
 bool checkHumanAt(vector<Token_t> tokens, Point_t  p) {
     for(Token_t t: tokens) {
         if(t.location.col == p.col && t.location.row == p.row) {
