@@ -14,7 +14,7 @@ const vector<Point_t> CAGE_COORDINATES = {
         {0, 4}, {1, 3}, {2, 2}, {3, 3}, {2, 4}, {1, 5}, {2, 6}, {3, 5}, {4, 4}
 };
 
-static int TIGERMOVECOUNT = 0;
+static int TIGERMOVECOUNT = 1;
 static int HUMAN_PROGRESSION_ROW=10;
 //GENERIC USEFUL FUNCTIONS
 double dist(Point_t p1, Point_t p2);
@@ -53,6 +53,9 @@ vector<Point_t> getLegalMovesSquare(const vector<Token_t>&, Token_t);
 bool isOccupied(const vector<Token_t>&, Point_t);
 Move_t takeHuman ( Token_t tiger, const vector<Token_t>& tokens, Point_t goal );
 bool checkOpen (const vector<Token_t>& tokens, Point_t pt);
+pair<bool, Move_t> singleScan(vector<Token_t> tokens);
+pair<bool,Move_t> doubleScan(vector<Token_t> tokens);
+
 inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens,
                                  Color_t color) {
     Move_t move{};
@@ -282,39 +285,47 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
     Move_t move;
     Token_t tigerToken = tokens[0];
     move.token = tigerToken;
-    if (TIGERMOVECOUNT <= 7) {
-        if (TIGERMOVECOUNT == 8) {
-            move.destination.col = (++tigerToken.location.col);
-            move.destination.row = (++tigerToken.location.row);
-        }
-        else if (TIGERMOVECOUNT == 1) {
-            move.destination.col = (--tigerToken.location.col);
-            move.destination.row = (++tigerToken.location.row);
-        }
-        else if (TIGERMOVECOUNT == 2 || TIGERMOVECOUNT == 3) {
-            move.destination.col = (++tigerToken.location.col);
-            move.destination.row = (++tigerToken.location.row);
-        }
+    int random = rand();
 
-        if (onDiag(tigerToken) && TIGERMOVECOUNT >= 4 && TIGERMOVECOUNT <= 5) {
-            move.destination.col = (++tigerToken.location.col);
-            move.destination.row = (++tigerToken.location.row);
+    //Temporary fix for picking left or right randomly
+    if (random % 2 == 0){
+        random = 1;
+    } else {
+        random = 4;
+    }
+    if (TIGERMOVECOUNT <= 5) {
+
+        if (TIGERMOVECOUNT == 1) {
+            move = moveDiag(tigerToken, 4);
+        }
+        else if (TIGERMOVECOUNT == 2){
+            move = moveDiag(tigerToken, 1);
+        }
+        else if (TIGERMOVECOUNT >= 3 && TIGERMOVECOUNT <= 5) {
+            move = moveDiag(tigerToken, random);
         }
     }
     if ( TIGERMOVECOUNT >= 6) {
-        move = moveVert(tigerToken, 2);
-        if (isOccupied(tokens, move.destination)){
-            if (checkOpen(tokens, move.destination)){
-                Point_t mir = mirror(move.destination, tigerToken.location);
-                move = takeHuman(tigerToken, tokens, mir);
-            } else {
+        pair<bool, Move_t> scanning;
+        scanning = singleScan(tokens);
+        if(scanning.first == true){
+            move.destination = scanning.second.destination;
+            if (isOccupied(tokens, move.destination)){
+                if (checkOpen(tokens, move.destination)){
+                    Point_t mir = mirror(move.destination, tigerToken.location);
+                    move = takeHuman(tigerToken, tokens, mir);
+                } else {
+                    move = moveVert(tigerToken, 1);
+                }
+            }
+        } else {
+            if (isOccupied(tokens, moveVert(tigerToken, 2).destination)){
                 move = moveVert(tigerToken, 1);
+            } else {
+                move = moveVert(tigerToken, 2);
             }
         }
 
-        if (!inBounds(move.destination)){
-
-        }
     }
 
 
@@ -448,21 +459,21 @@ Move_t moveDiag(Token_t item, int direction){
     Move_t newLocation;
     newLocation.token = item;
     switch (direction) {
-        case 1: // up right
-            newLocation.destination.row = location.row++;
-            newLocation.destination.col = location.col++;
+        case 1: // down right
+            newLocation.destination.row = location.row + 1;
+            newLocation.destination.col = location.col + 1;
             break;
-        case 2: // down left
-            newLocation.destination.row = location.row--;
-            newLocation.destination.col = location.col--;
+        case 2: // up left
+            newLocation.destination.row = location.row - 1;
+            newLocation.destination.col = location.col - 1;
             break;
-        case 3: // down right
-            newLocation.destination.row = location.row++;
-            newLocation.destination.col = location.col--;
+        case 3: // up right
+            newLocation.destination.row = location.row - 1;
+            newLocation.destination.col = location.col + 1;
             break;
-        case 4: // up left
-            newLocation.destination.row = location.row--;
-            newLocation.destination.col = location.col++;
+        case 4: // down left
+            newLocation.destination.row = location.row + 1;
+            newLocation.destination.col = location.col - 1;
             break;
     }
     return newLocation;
@@ -553,11 +564,140 @@ pair<bool, Move_t> singleScan(vector<Token_t> tokens){
 
     if (onDiag(tigerToken)){
         for (int i = 0; i < DIAGONAL_COORDINATES.size(); i++){
-            if (abs(dist(tigerToken.location, DIAGONAL_COORDINATES[i]) - sqrt(2)) < tolerance) {
-
+            if (abs(dist(tigerToken.location,
+                         DIAGONAL_COORDINATES[i]) - sqrt(2)) < tolerance) {
+                singleScan
             }
         }
     }
 
+    //Check Right for takeable
+    tempMove = tigerToken.location;
+    tempMove.col++;
+    if(checkOpen(tokens, tempMove)){
+        movesReturn.first = true;
+        movesReturn.second.destination = tempMove;
+        if(inBounds(movesReturn.second.destination) &&
+           !(movesReturn.second.token == tigerToken)){
+            return movesReturn;
+        }
+    }
+
+    //Check Left for takeable
+    tempMove = tigerToken.location;
+    tempMove.col--;
+    if(checkOpen(tokens, tempMove)){
+        movesReturn.first = true;
+        movesReturn.second.destination = tempMove;
+        if(inBounds(movesReturn.second.destination) &&
+           !(movesReturn.second.token == tigerToken)){
+            return movesReturn;
+        }
+    }
+
+    //Check Up for takeable
+    tempMove = tigerToken.location;
+    tempMove.row++;
+    if(checkOpen(tokens, tempMove)){
+        movesReturn.first = true;
+        movesReturn.second.destination = tempMove;
+        if(inBounds(movesReturn.second.destination) &&
+           !(movesReturn.second.token == tigerToken)){
+            return movesReturn;
+        }
+    }
+
+    //Check Down for takeable
+    tempMove = tigerToken.location;
+    tempMove.row--;
+    if(checkOpen(tokens, tempMove)){
+        movesReturn.first = true;
+        movesReturn.second.destination = tempMove;
+        if(inBounds(movesReturn.second.destination) &&
+           !(movesReturn.second.token == tigerToken)){
+            return movesReturn;
+        }
+    }
+
+    movesReturn.first = false;
+    movesReturn.second.destination = tigerToken.location;
+    return movesReturn;
+}
+
+pair<bool,Move_t> doubleScan(vector<Token_t> tokens){
+    //TODO: THIS LOGIC MAKES NO SENSE, AND I AM VERY TIRED, GOODNIGHT
+    Token_t tigerToken = tokens[0];
+    pair<bool, Move_t> movesReturn;
+    Point_t tempMove;
+    movesReturn.second.token = tigerToken;
+    double tolerance = 0.0001;
+
+    if (onDiag(tigerToken)){
+        for (int i = 0; i < DIAGONAL_COORDINATES.size(); i++){
+            if (abs(dist(tigerToken.location,
+                         DIAGONAL_COORDINATES[i]) - sqrt(2)) < tolerance) {
+                if (checkOpen(tokens, DIAGONAL_COORDINATES[i])){
+                    movesReturn.first = true;
+                    movesReturn.second.destination = DIAGONAL_COORDINATES[i];
+                    if(inBounds(movesReturn.second.destination) &&
+                       !(movesReturn.second.token == tigerToken)){
+                        return movesReturn;
+                    }
+
+                }
+            }
+        }
+    }
+
+    //Check Right for takeable
+    tempMove = tigerToken.location;
+    tempMove.col++;
+    if(checkOpen(tokens, tempMove)){
+        movesReturn.first = true;
+        movesReturn.second.destination = tempMove;
+        if(inBounds(movesReturn.second.destination) &&
+           !(movesReturn.second.token == tigerToken)){
+            return movesReturn;
+        }
+    }
+
+    //Check Left for takeable
+    tempMove = tigerToken.location;
+    tempMove.col--;
+    if(checkOpen(tokens, tempMove)){
+        movesReturn.first = true;
+        movesReturn.second.destination = tempMove;
+        if(inBounds(movesReturn.second.destination) &&
+           !(movesReturn.second.token == tigerToken)){
+            return movesReturn;
+        }
+    }
+
+    //Check Up for takeable
+    tempMove = tigerToken.location;
+    tempMove.row++;
+    if(checkOpen(tokens, tempMove)){
+        movesReturn.first = true;
+        movesReturn.second.destination = tempMove;
+        if(inBounds(movesReturn.second.destination) &&
+           !(movesReturn.second.token == tigerToken)){
+            return movesReturn;
+        }
+    }
+
+    //Check Down for takeable
+    tempMove = tigerToken.location;
+    tempMove.row--;
+    if(checkOpen(tokens, tempMove)){
+        movesReturn.first = true;
+        movesReturn.second.destination = tempMove;
+        if(inBounds(movesReturn.second.destination) &&
+           !(movesReturn.second.token == tigerToken)){
+            return movesReturn;
+        }
+    }
+
+    movesReturn.first = false;
+    movesReturn.second.destination = tigerToken.location;
     return movesReturn;
 }
