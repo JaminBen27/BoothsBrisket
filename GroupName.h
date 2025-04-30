@@ -24,6 +24,7 @@ bool inCage(Token_t);
 Move_t moveDiag(Token_t, int);
 Move_t moveHorz(Token_t, int);
 Move_t moveVert(Token_t, int);
+bool inBounds(Point_t pt);
 //------------------------------------------------------------------
 //------------------------------------------------------------------
 //------------------------------------------------------------------
@@ -47,12 +48,11 @@ Move_t takeDiag(vector<Token_t> tokens);
 //---------------------------------------------------------------------
 //TIGER SPECIFIC FUNCTIONS
 Move_t tigerFunction(const vector<Token_t>&);
-Token_t findTiger(const vector<Token_t>&);
 vector<Point_t> getLegalMovesCage(const vector<Token_t>&, Token_t);
 vector<Point_t> getLegalMovesSquare(const vector<Token_t>&, Token_t);
 bool isOccupied(const vector<Token_t>&, Point_t);
 Move_t takeHuman ( Token_t tiger, const vector<Token_t>& tokens, Point_t goal );
-pair<bool,Move_t> checkOpen (const vector<Token_t>& tokens, Token_t tiger);
+bool checkOpen (const vector<Token_t>& tokens, Point_t pt);
 inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens,
                                  Color_t color) {
     Move_t move{};
@@ -90,7 +90,7 @@ inline Move_t humanFunction(const vector<Token_t>& tokens ) {
    if(HUMAN_PROGRESSION_ROW>3) {
         token = checkProtected(tokens);
        //CHECK PROTECTED
-        if(!checkSameToken(token,findTiger(tokens)))
+        if(!checkSameToken(token,tokens[0]))
         {
             m = protect(tokens,token);
         }
@@ -280,7 +280,7 @@ bool checkSelfSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocati
 }
 inline Move_t tigerFunction(const vector<Token_t>& tokens) {
     Move_t move;
-    Token_t tigerToken = findTiger(tokens);
+    Token_t tigerToken = tokens[0];
     move.token = tigerToken;
     if (TIGERMOVECOUNT <= 7) {
         if (TIGERMOVECOUNT == 8) {
@@ -303,31 +303,24 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
     }
     if ( TIGERMOVECOUNT >= 6) {
         move = moveVert(tigerToken, 2);
-
-        if (isOccupied(tokens, move.destination)) {
-            Point_t mir = mirror(move.destination, tigerToken.location);
-
-            if ( ! isOccupied (tokens, mir)) {
-                move = takeHuman( tigerToken, tokens, mir);
-            }
-            else {
-                move = moveVert(tigerToken, 1);
+        if (isOccupied(tokens, move.destination)){
+            if (checkOpen(tokens, move.destination)){
+                Point_t mir = mirror(move.destination, tigerToken.location);
+                takeHuman(tigerToken, tokens, mir);
             }
         }
+        else {
+            move = moveVert(tigerToken, 1);
+        }
+
+        if (!inBounds(move.destination)){
+
+        }
     }
+
+
     TIGERMOVECOUNT++;
-
     return move;
-}
-
-Token_t findTiger(const vector<Token_t>& tokens) {
-    for (const Token_t& token_t : tokens) {
-        if (token_t.color == RED) {
-            return token_t;
-        }
-    }
-    cout << "ERROR: TIGER TOKEN WAS NOT FOUND" << endl;
-    exit(1);  // TODO: Maybe temporary crash, need to test
 }
 
 bool onDiag(Token_t token){
@@ -352,44 +345,18 @@ Move_t takeHuman ( Token_t tiger, const vector<Token_t>& tokens, Point_t goal ) 
     return move;
 }
 
-pair<bool,Move_t> checkOpen (const vector<Token_t>& tokens, Token_t tiger) {
-    bool isValid = false;
-    Move_t move;
-    move.token = tiger;
-    move.destination = tiger.location;
-    //Check vert +
-    Point_t plusOne = tiger.location;
-    plusOne.row -= 2;
-    if ( !isOccupied(tokens, plusOne )) {
-        isValid = true;
-        move.destination = plusOne;
-    }
-    //Check vert -
-    Point_t minOne = tiger.location;
-    minOne.row += 2;
-    if ( !isOccupied(tokens, minOne )) {
-        isValid = true;
-        move.destination = minOne;
-    }
-    //Check Horiz +
-    Point_t horizPlusOne = tiger.location;
-    plusOne.col -= 2;
-    if ( !isOccupied(tokens, horizPlusOne )) {
-        isValid = true;
-        move.destination = horizPlusOne;
-    }
-    //Check vert -
-    Point_t horizMinOne = tiger.location;
-    horizMinOne.row += 2;
-    if ( !isOccupied(tokens, horizMinOne )) {
-        isValid = true;
-        move.destination = horizMinOne;
-    }
+bool checkOpen (const vector<Token_t>& tokens, Point_t pt) {
+    bool takeable = false;
+    Token_t tigerToken = tokens[0];
+    if (isOccupied(tokens, pt)) {
+        Point_t mir = mirror(pt, tigerToken.location);
 
-    pair<bool, Move_t> returnPair;
-    returnPair.first = isValid;
-    returnPair.second = move;
-    return returnPair;
+        if (!isOccupied(tokens, mir)) {
+            takeable = true;
+        }
+
+    }
+    return takeable;
 }
 
 bool inCage(Token_t token){
@@ -537,7 +504,7 @@ Move_t moveVert(Token_t item, int direction){
 
 inline bool checkSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocation) {
     bool sacrifice = false;
-    Token_t tigerToken = findTiger(tokens);
+    Token_t tigerToken = tokens[0];
     Token_t midpointLocation;
     midpointLocation.location.col = (tigerToken.location.col + human.location.col) / 2;
     midpointLocation.location.row = (tigerToken.location.row + human.location.row) / 2;
@@ -561,4 +528,37 @@ inline bool checkSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLoc
         }
         return sacrifice;
     }
+}
+
+bool inBounds(Point_t pt){
+    for (int i = 0; i < CAGE_COORDINATES.size(); i++){
+        if (pt.col == CAGE_COORDINATES[i].col &&
+            pt.row == CAGE_COORDINATES[i].row){
+            return true;
+        }
+    }
+
+    if (pt.col > 8 || pt.col < 0 || pt.row > 12 || pt.row < 4) {
+        return false;
+    }
+
+    return true;
+}
+
+pair<bool, Move_t> singleScan(vector<Token_t> tokens){
+    Token_t tigerToken = tokens[0];
+    pair<bool, Move_t> movesReturn;
+    Point_t tempMove;
+    movesReturn.second.token = tigerToken;
+    double tolerance = 0.0001;
+
+    if (onDiag(tigerToken)){
+        for (int i = 0; i < DIAGONAL_COORDINATES.size(); i++){
+            if (abs(dist(tigerToken.location, DIAGONAL_COORDINATES[i]) - sqrt(2)) < tolerance) {
+
+            }
+        }
+    }
+
+    return movesReturn;
 }
