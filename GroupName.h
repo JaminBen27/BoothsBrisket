@@ -53,6 +53,7 @@ bool checkRowVulnrability(vector<Token_t> tokens, Token_t piece);
 bool checkColumnDanger(vector<Token_t> tokens, Token_t piece);
 vector<Token_t> updateRowVulnrabilities(vector<Token_t> tokens,vector<Token_t>);
 vector<Move_t> fixRowVuln(vector<Token_t> tokens, vector<Token_t> rowVulns);
+vector<Token_t> sortDistanceFromTiger(vector<Token_t> tokens, Token_t tiger);
 
 void updateProgressionRow(vector<Token_t> tokens);
 vector<Point_t> availableDiag(vector<Token_t> tokens);
@@ -121,7 +122,12 @@ inline Move_t humanFunction(const vector<Token_t>& tokens ) {
         //MOVE FURTHEST
             temp = getFurthestPieces(tokens,midLine,backLine);
             collectMoves(moveList,temp);
-        m= moveList.front();
+        bool badMove = true;
+        while(badMove) {
+            m= moveList.front();
+            moveList.pop();
+            badMove = checkBadMove(tokens,m);
+        }
         SACMOVES.clear();
         updateProgressionRow(tokens);
     }
@@ -337,6 +343,7 @@ vector<Move_t> getFurthestPieces(vector<Token_t> tokens,vector<Token_t> midRow,v
             canadites.push_back(t);
         }
     }
+    canadites = sortDistanceFromTiger(canadites,tiger);
     //TODO GET FURTHEST CALCULATOR
     //SKIPPED FOR NOW FOR TIME SAKE
     for(Token_t t : canadites) {
@@ -346,6 +353,22 @@ vector<Move_t> getFurthestPieces(vector<Token_t> tokens,vector<Token_t> midRow,v
         moves.push_back(m);
     }
     return moves;
+}
+vector<Token_t> sortDistanceFromTiger(vector<Token_t> tokens, Token_t tiger) {
+    vector<Token_t> list;
+    while(tokens.size() >0) {
+        int index;
+        Token_t maxDist = tiger;
+        for(int i=0; i < tokens.size(); i++) {
+            if(dist(tokens.at(i).location, tiger.location) > dist(maxDist.location,tiger.location)) {
+                maxDist = tokens.at(i);
+                index = i;
+            }
+        }
+        list.push_back(maxDist);
+        tokens.erase(tokens.begin()+index);
+    }
+    return list;
 }
 double dist(Point_t p1, Point_t p2) {
     return sqrt(pow(p1.row - p2.row,2) + pow(p1.col - p2.col,2));
@@ -810,8 +833,9 @@ Token_t getHumanAt(vector<Token_t> tokens, Point_t  p) {
     }
     else {
         cout << "ERROR: HUMAN DOESNT EXIST";
-        return tokens[0];
     }
+    return tokens[0];
+
 }
 void collectMoves(queue<Move_t>& q, vector<Move_t> moves) {
     for(Move_t m: moves) {
