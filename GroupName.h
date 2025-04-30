@@ -306,11 +306,10 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
         if (isOccupied(tokens, move.destination)){
             if (checkOpen(tokens, move.destination)){
                 Point_t mir = mirror(move.destination, tigerToken.location);
-                takeHuman(tigerToken, tokens, mir);
+                move = takeHuman(tigerToken, tokens, mir);
+            } else {
+                move = moveVert(tigerToken, 1);
             }
-        }
-        else {
-            move = moveVert(tigerToken, 1);
         }
 
         if (!inBounds(move.destination)){
