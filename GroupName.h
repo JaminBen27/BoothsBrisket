@@ -86,6 +86,48 @@ inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens, Color_t c) {
     return humanFunction(tokens);
 }
 
+//Checks if a move is legal (i.e. move is in bounds & destination is unoccupied)
+//Does not account for the cage
+bool checkLegalMove(const vector<Token_t>& tokens, Move_t move) {
+    for (Token_t t: tokens) {
+        if (t.location == move.destination) {
+            return false;
+        }
+    }
+    if (move.destination.col < 0 || move.destination.col > 8) {
+        return false;
+    }
+    if (move.destination.row < 4 || move.destination.row > 12) {
+        return false;
+    }
+    return true;
+}
+
+Move_t pickRandom (const vector<Token_t>& tokens) {
+    Move_t move;
+    do {
+        do {
+            size_t i = rand() % tokens.size();
+            move.token.color = tokens[i].color;
+            move.token.location.row = tokens[i].location.row;
+            move.token.location.col = tokens[i].location.col;
+        } while (move.token.color == RED);
+
+        int direction = rand() % 4;
+        if (direction == 0) {
+            move.destination.col = move.token.location.col + 1;
+        } else if (direction == 1) {
+            move.destination.col = move.token.location.col - 1;
+        } else if (direction == 2) {
+            move.destination.row = move.token.location.row + 1;
+        } else {
+            move.destination.row = move.token.location.row - 1;
+        }
+    } while (checkLegalMove(tokens, move) == false);
+    cout << "Random: ";
+    return move;
+}
+
 inline Move_t humanFunction(const vector<Token_t>& tokens ) {
     Move_t m;
     Token_t token;
@@ -123,10 +165,13 @@ inline Move_t humanFunction(const vector<Token_t>& tokens ) {
             temp = getFurthestPieces(tokens,midLine,backLine);
             collectMoves(moveList,temp);
         bool badMove = true;
-        while(badMove) {
-            m= moveList.front();
+        while(badMove && moveList.size() > 0 && checkLegalMove(tokens,m) == false) {
+            m = moveList.front();
             moveList.pop();
             badMove = checkBadMove(tokens,m);
+        }
+        if (moveList.size() == 0) {
+            return pickRandom(tokens);
         }
         SACMOVES.clear();
         updateProgressionRow(tokens);
