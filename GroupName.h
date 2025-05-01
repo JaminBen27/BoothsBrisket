@@ -26,6 +26,7 @@ const vector<Point_t> CAGE_COORDINATES = {
 static int TIGERMOVECOUNT = 1;
 static int HUMAN_PROGRESSION_ROW = 10;
 static vector<Move_t> SACMOVES;
+
 //Game Phases
 //GENERIC USEFUL FUNCTIONS
 double dist(Point_t p1, Point_t p2);
@@ -166,12 +167,12 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
             temp = getFurthestPieces(tokens,midLine,backLine);
             collectMoves(moveList,temp);
         bool badMove = true;
-        while(badMove && moveList.size() > 0 && checkLegalMove(tokens,m) == false) {
+        while(badMove && moveList.size() > 0) {
             m = moveList.front();
             moveList.pop();
             badMove = checkBadMove(tokens,m);
         }
-        if (moveList.size() == 0) {
+        if (badMove) {
             return pickRandom(tokens);
         }
         SACMOVES.clear();
@@ -259,7 +260,7 @@ bool checkBadMove(vector<Token_t> tokens, Move_t m) {
     //2 bools for easier debugging
     bool selfSac = checkSelfSacrifice(tokens,m.token,m.destination);
     bool sac = checkSacrifice(tokens,m.token,m.destination);
-    if(selfSac || sac) {
+    if(selfSac || sac || !checkLegalMove(tokens,m)) {
         SACMOVES.push_back(m);
         return true;
     }
