@@ -38,7 +38,6 @@ Move_t moveHorz(Token_t, int);
 Move_t moveVert(Token_t, int);
 bool checkHumanAt(vector<Token_t> tokens, Point_t  p);
 Token_t getHumanAt(vector<Token_t> tokens, Point_t  p);
-
 bool inBounds(Point_t pt);
 //------------------------------------------------------------------
 //------------------------------------------------------------------
@@ -52,6 +51,7 @@ bool checkSameToken(Token_t token1, Token_t token2);
 vector<Move_t> getFurthestPieces(vector<Token_t> tokens,vector<Token_t>,vector<Token_t>);
 bool checkRowVulnerability(vector<Token_t> tokens, Token_t piece);
 bool checkColumnDanger(vector<Token_t> tokens, Token_t piece);
+bool checkImmediateDanger(vector<Token_t> tokens);
 
 vector<Token_t> updateColVulnerabilities(vector<Token_t> tokens, vector<Token_t>);
 vector<Token_t> updateRowVulnerabilities(vector<Token_t> tokens,vector<Token_t>);
@@ -233,16 +233,23 @@ int  getHalf(Point_t p) {
 vector<Move_t> fixColVuln(vector<Token_t> tokens, vector<Token_t> colVulns) {
     vector<Move_t> moves;
     Move_t m;
-    Point_t p;
+    Point_t primary;
+    Point_t secondary;
     for(Token_t t: colVulns) {
-        p = t.location;
-        p.col += getHalf(p);
-        p.row +=1;
-        if(checkHumanAt(tokens,p)) {
-            Token_t protectionPiece = getHumanAt(tokens,p);
-            m.token = protectionPiece;
-            p.row--;
-            m.destination = p;
+        primary = {t.location.row + 1, t.location.col + getHalf(t.location)};
+        //primary.col += getHalf(primary);
+        //primary.row +=1;
+
+        secondary = {t.location.row + 1, t.location.col - getHalf(t.location)};
+
+        if(checkHumanAt(tokens,primary)) {
+            m.token = getHumanAt(tokens,primary);
+            m.destination = {primary.row - 1, primary.col};
+            moves.push_back(m);
+        }
+        if (checkHumanAt(tokens,secondary)) {
+            m.token = getHumanAt(tokens,secondary);
+            m.destination = {secondary.row - 1, secondary.col};
             moves.push_back(m);
         }
     }
@@ -462,7 +469,7 @@ vector<Move_t> getFurthestPieces(vector<Token_t> tokens,vector<Token_t> midRow,v
             canadites.push_back(t);
         }
     }
-    canadites = sortDistanceFromTiger(canadites,tiger);
+    //canadites = sortDistanceFromTiger(canadites,tiger);
     //TODO GET FURTHEST CALCULATOR
     //SKIPPED FOR NOW FOR TIME SAKE
     for(Token_t t : canadites) {
