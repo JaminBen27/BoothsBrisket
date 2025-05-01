@@ -131,6 +131,30 @@ Move_t pickRandom (const vector<Token_t>& tokens) {
     return move;
 }
 
+Move_t pickRandom(vector<Token_t> tokens, Move_t move) {
+    move.destination = move.token.location;
+    do {
+        if (rand() % 2 == 0) {
+            if (rand() % 2 == 0) {
+                move.destination.col++;
+            }
+            else {
+                move.destination.col--;
+            }
+        }
+        else {
+            if (rand() % 2 == 0) {
+                move.destination.row++;
+            }
+            else {
+                move.destination.row--;
+            }
+        }
+    } while (checkLegalMove(tokens, move) == false);
+
+    return move;
+}
+
 inline Move_t humanFunction(const vector<Token_t>& tokens) {
     Move_t m;
     Token_t token;
@@ -446,10 +470,12 @@ bool checkSameToken(Token_t token1, Token_t token2) {
 // EX: mirror ( (2,1) , (2,2) ) returns 2,3
 // works for diagonals
 // be careful not to mirror long distances
+//move dest ( 10,4), tigerPos ( 11,4)
 Point_t mirror(Point_t pivot, Point_t  mirroredVal) {
     Point_t m;
      m.row = pivot.row - (mirroredVal.row- pivot.row);
      m.col = pivot.col - (mirroredVal.col- pivot.col);
+    cout << "Printing Mirror: " << m.col << " " << m.row << endl;
     return m;
 
 }
@@ -492,6 +518,7 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
                         cout << "AHHHHHHHHHHHHHHHHHH" << endl;
                     }
                     cout << "die die die" << endl;
+                    cout << "die die die" << move.destination.col << ", " << move.destination.row << endl ;
                 } else {
                     move = moveVert(tigerToken, 1);
                 }
@@ -548,7 +575,9 @@ bool checkOpen (const vector<Token_t>& tokens, Point_t pt) {
         Point_t mir = mirror(pt, tigerToken.location);
 
         if (!isOccupied(tokens, mir)) {
-            takeable = true;
+            if ( inBounds(mir) ) {
+                takeable = true;
+            }
         }
 
     }
