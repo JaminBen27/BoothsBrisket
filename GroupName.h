@@ -132,22 +132,24 @@ Move_t pickRandom (const vector<Token_t>& tokens) {
 
 Move_t pickRandom(vector<Token_t> tokens, Move_t move) {
     move.destination = move.token.location;
-    if (rand() % 2 == 0) {
+    do {
         if (rand() % 2 == 0) {
-            move.destination.col++;
+            if (rand() % 2 == 0) {
+                move.destination.col++;
+            }
+            else {
+                move.destination.col--;
+            }
         }
         else {
-            move.destination.col--;
+            if (rand() % 2 == 0) {
+                move.destination.row++;
+            }
+            else {
+                move.destination.row--;
+            }
         }
-    }
-    else {
-        if (rand() % 2 == 0) {
-            move.destination.row++;
-        }
-        else {
-            move.destination.row--;
-        }
-    }
+    } while (checkLegalMove(tokens, move) == false);
 
     return move;
 }
