@@ -79,6 +79,7 @@ Move_t takeHuman ( Token_t tiger, const vector<Token_t>& tokens, Point_t goal );
 bool checkOpen (const vector<Token_t>& tokens, Point_t pt);
 pair<bool, Move_t> singleScan(vector<Token_t> tokens, Point_t pos);
 pair<bool,Move_t> doubleScan(vector<Token_t> tokens);
+Move_t moveToClosestHuman(vector<Token_t> tokens);
 
 inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens, Color_t c) {
     if (c == RED) {
@@ -477,37 +478,36 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
             move = moveDiag(tigerToken, random);
         }
     }
-    if ( TIGERMOVECOUNT >= 6) {
+    if ((tokens.size() - 1 > 9) && TIGERMOVECOUNT >= 6) {
         pair<bool, Move_t> scanning = singleScan(tokens, tigerToken.location);
         pair<bool, Move_t> secondScan = doubleScan(tokens);
-        if(scanning.first == true){
-            cout << "found target" << endl ;
+        if (scanning.first == true) {
+            cout << "found target" << endl;
             move.destination = scanning.second.destination;
-            if (isOccupied(tokens, move.destination)){
-                if (checkOpen(tokens, move.destination)){
+            if (isOccupied(tokens, move.destination)) {
+                if (checkOpen(tokens, move.destination)) {
                     Point_t mir = mirror(move.destination, tigerToken.location);
                     move = takeHuman(tigerToken, tokens, mir);
-                    if ( inBounds(move.destination)) {
+                    if (inBounds(move.destination)) {
                         cout << "AHHHHHHHHHHHHHHHHHH" << endl;
                     }
-                    cout << "die die die" << endl ;
+                    cout << "die die die" << endl;
                 } else {
                     move = moveVert(tigerToken, 1);
                 }
             }
-        }
-        else if (secondScan.first == true) {
-            cout << "Hunting" << endl ;
+        } else if (secondScan.first == true) {
+            cout << "Hunting" << endl;
             move.destination = secondScan.second.destination;
-        }
-        else {
-            if (isOccupied(tokens, moveVert(tigerToken, 2).destination)){
+        } else {
+            if (isOccupied(tokens, moveVert(tigerToken, 2).destination)) {
                 move = moveVert(tigerToken, 1);
             } else {
                 move = moveVert(tigerToken, 2);
             }
         }
-
+    } else if (tokens.size() - 1 < 10){
+        move = moveToClosestHuman(tokens);
     }
     TIGERMOVECOUNT++;
     if ( inBounds(move.destination)) {
@@ -909,4 +909,124 @@ void collectMoves(queue<Move_t>& q, vector<Move_t> moves) {
     for(Move_t m: moves) {
         q.push(m);
     }
+}
+
+Move_t moveToClosestHuman(vector<Token_t> tokens) {
+    Token_t tigerToken = tokens[0];
+    Move_t move;
+    move.token = tigerToken;
+
+    // First check if any humans are directly capturable
+    pair<bool, Move_t> scanning = singleScan(tokens, tigerToken.location);
+    pair<bool, Move_t> secondScan = doubleScan(tokens);
+
+    if (scanning.first) {
+        return scanning.second;
+    } else if (secondScan.first) {
+        return secondScan.second;
+    }
+
+    // Find the closest human
+    int closestIndex = 1;
+    double closestDistance = dist(tigerToken.location, tokens[1].location);
+
+    for (int i = 2; i < tokens.size(); i++) {
+        double currentDist = dist(tigerToken.location, tokens[i].location);
+        if (currentDist < closestDistance) {
+            closestIndex = i;
+            closestDistance = currentDist;
+        }
+    }
+
+    // Get the closest human token
+    Token_t closestHuman = tokens[closestIndex];
+    Point_t destination = tigerToken.location;
+
+    if (closestHuman.location.col == tigerToken.location.col) {
+        if (closestHuman.location.row < tigerToken.location.row) {
+            // Human is above tiger
+            destination.row--;
+        } else {
+            // Human is below tiger
+            destination.row++;
+        }
+    } else if (closestHuman.location.row == tigerToken.location.row) {
+        if (closestHuman.location.col < tigerToken.location.col) {
+            // Human is to the left
+            destination.col--;
+        } else {
+            // Human is to the right
+            destination.col++;
+        }
+    } else {
+        // We need to move diagonally if possible, or choose the best direction
+        int rowDiff = closestHuman.location.row - tigerToken.location.row;
+        int colDiff = closestHuman.location.col - tigerToken.location.col;
+
+        if (onDiag(tigerToken) && onDiag(closestHuman)) {
+            destination.row += (rowDiff > 0) ? 1 : -1;
+            destination.col += (colDiff > 0) ? 1 : -1;
+        } else {
+            if (abs(rowDiff) > abs(colDiff)) {
+                destination.row += (rowDiff > 0) ? 1 : -1;
+            } else {
+                destination.col += (colDiff > 0) ? 1 : -1;
+            }
+        }
+    }
+
+    // Ensure the destination is valid
+    if (!inBounds(destination) || isOccupied(tokens, destination)) {
+        // If the preferred move isn't valid, try alternatives
+        vector<Point_t> possibleMoves;
+
+        Point_t vertMove = tigerToken.location;
+        vertMove.row += (closestHuman.location.row > tigerToken.location.row) ? 1 : -1;
+        if (inBounds(vertMove) && !isOccupied(tokens, vertMove)) {
+            possibleMoves.push_back(vertMove);
+        }
+
+        Point_t horzMove = tigerToken.location;
+        horzMove.col += (closestHuman.location.col > tigerToken.location.col) ? 1 : -1;
+        if (inBounds(horzMove) && !isOccupied(tokens, horzMove)) {
+            possibleMoves.push_back(horzMove);
+        }
+
+        if (onDiag(tigerToken)) {
+            for (int rowDir = -1; rowDir <= 1; rowDir += 2) {
+                for (int colDir = -1; colDir <= 1; colDir += 2) {
+                    Point_t diagMove = tigerToken.location;
+                    diagMove.row += rowDir;
+                    diagMove.col += colDir;
+                    if (inBounds(diagMove) && !isOccupied(tokens, diagMove)) {
+                        Token_t tempToken;
+                        tempToken.location = diagMove;
+
+                        if (onDiag(tempToken)) {
+                            possibleMoves.push_back(diagMove);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Choose the move that gets us closest to the human
+        if (!possibleMoves.empty()) {
+            Point_t bestMove = possibleMoves[0];
+            double bestDist = dist(bestMove, closestHuman.location);
+
+            for (const Point_t& p : possibleMoves) {
+                double currentDist = dist(p, closestHuman.location);
+                if (currentDist < bestDist) {
+                    bestDist = currentDist;
+                    bestMove = p;
+                }
+            }
+
+            destination = bestMove;
+        }
+    }
+
+    move.destination = destination;
+    return move;
 }
