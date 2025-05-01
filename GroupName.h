@@ -305,10 +305,12 @@ vector<Token_t> getBackRow(vector<Token_t> tokens) {
 vector<Token_t> updateRowVulnerabilities(vector<Token_t> tokens, vector<Token_t> frontRow) {
     vector<Token_t> rowVulns;
     for(Token_t t: frontRow) {
-        Point_t p = t.location;
-        p.row++;
-        if(!checkHumanAt(tokens,p)) {
-            rowVulns.push_back(t);
+        if (t.color == BLUE) {
+            Point_t front = {t.location.row - 1, t.location.col};
+            Point_t back = {t.location.row + 1, t.location.col};
+            if(!checkHumanAt(tokens,front) && !checkHumanAt(tokens,back)) {
+                rowVulns.push_back(t);
+            }
         }
     }
     return rowVulns;
