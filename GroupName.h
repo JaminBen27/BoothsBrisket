@@ -130,6 +130,28 @@ Move_t pickRandom (const vector<Token_t>& tokens) {
     return move;
 }
 
+Move_t pickRandom(vector<Token_t> tokens, Move_t move) {
+    move.destination = move.token.location;
+    if (rand() % 2 == 0) {
+        if (rand() % 2 == 0) {
+            move.destination.col++;
+        }
+        else {
+            move.destination.col--;
+        }
+    }
+    else {
+        if (rand() % 2 == 0) {
+            move.destination.row++;
+        }
+        else {
+            move.destination.row--;
+        }
+    }
+
+    return move;
+}
+
 inline Move_t humanFunction(const vector<Token_t>& tokens) {
     Move_t m;
     Token_t token;
