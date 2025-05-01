@@ -517,7 +517,6 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
                     if (inBounds(move.destination)) {
                         cout << "AHHHHHHHHHHHHHHHHHH" << endl;
                     }
-                    cout << "die die die" << endl;
                     cout << "die die die" << move.destination.col << ", " << move.destination.row << endl ;
                 } else {
                     move = moveVert(tigerToken, 1);
@@ -541,7 +540,7 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
         return move;
     }
     else {
-        move = moveVert(tigerToken, 1);
+        move = pickRandom(tokens, move);
         return move;
     }
 }
@@ -950,7 +949,15 @@ Move_t moveToClosestHuman(vector<Token_t> tokens) {
     pair<bool, Move_t> secondScan = doubleScan(tokens);
 
     if (scanning.first) {
-        return scanning.second;
+        cout << "found target" << endl;
+        move.destination = scanning.second.destination;
+        if (isOccupied(tokens, move.destination)) {
+            if (checkOpen(tokens, move.destination)) {
+                Point_t mir = mirror(move.destination, tigerToken.location);
+                move = takeHuman(tigerToken, tokens, mir);
+                return move;
+            }
+        }
     } else if (secondScan.first) {
         return secondScan.second;
     }
