@@ -52,8 +52,12 @@ bool checkSameToken(Token_t token1, Token_t token2);
 vector<Move_t> getFurthestPieces(vector<Token_t> tokens,vector<Token_t>,vector<Token_t>);
 bool checkRowVulnrability(vector<Token_t> tokens, Token_t piece);
 bool checkColumnDanger(vector<Token_t> tokens, Token_t piece);
+
+vector<Token_t> updateColVulnrabilities(vector<Token_t> tokens, vector<Token_t>);
 vector<Token_t> updateRowVulnrabilities(vector<Token_t> tokens,vector<Token_t>);
 vector<Move_t> fixRowVuln(vector<Token_t> tokens, vector<Token_t> rowVulns);
+vector<Move_t> fixColVuln(vector<Token_t> tokens, vector<Token_t> colVulns);
+
 vector<Token_t> sortDistanceFromTiger(vector<Token_t> tokens, Token_t tiger);
 
 void updateProgressionRow(vector<Token_t> tokens);
@@ -181,9 +185,15 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
         midLine = getMiddleRow(tokens);
         backLine = getBackRow(tokens);
         rowVulnerabilities = updateRowVulnrabilities(tokens, frontLine);
+        colVulnerabilities = updateColVulnrabilities(tokens,frontLine);
+
         vector<Move_t> temp;
         if(rowVulnerabilities.size() > 0) {
             temp = fixRowVuln(tokens,rowVulnerabilities);
+            collectMoves(moveList,temp);
+        }
+        if(colVulnerabilities.size() > 0) {
+            temp = fixColVuln(tokens,colVulnerabilities);
             collectMoves(moveList,temp);
         }
             temp = takeDiag(tokens);
@@ -205,6 +215,54 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
     }
 
     return m;
+}
+int  getHalf(Point_t p) {
+    Point_t temp = p;
+    temp.col -=1;
+    if(p.col <=4 && inBounds(temp)) {
+        return -1;
+    }
+    if( p.col <=4 && !inBounds(temp)) {
+        return 1;
+    }
+    temp.col +=2;
+    if(p.col> 4 && inBounds(temp)) {
+        return 1;
+    }
+    if(p.col > 4 && !inBounds(temp)) {
+        return -1;
+    }
+}
+vector<Move_t> fixColVuln(vector<Token_t> tokens, vector<Token_t> colVulns) {
+    vector<Move_t> moves;
+    Move_t m;
+    Point_t p;
+    for(Token_t t: colVulns) {
+        p = t.location;
+        p.col += getHalf(p);
+        p.row +=1;
+        if(checkHumanAt(tokens,p)) {
+            Token_t protectionPiece = getHumanAt(tokens,p);
+            m.token = protectionPiece;
+            p.row--;
+            m.destination = p;
+            moves.push_back(m);
+        }
+
+    }
+    return moves;
+}
+vector<Token_t> updateColVulnrabilities(vector<Token_t> tokens,vector<Token_t> frontRow) {
+    vector<Token_t> colVulns;
+    for(Token_t t: frontRow) {
+        Point_t p1 = t.location;
+        p1.col-=1;
+        Point_t p2 = mirror(t.location,p1);
+        if(!checkHumanAt(tokens,p1) && inBounds(p1) || !checkHumanAt(tokens,p2) && inBounds(p2)) {
+            colVulns.push_back(t);
+        }
+    }
+    return colVulns;
 }
 vector<Move_t> fixRowVuln(vector<Token_t> tokens, vector<Token_t> rowVulns) {
     vector<Move_t> moves;
@@ -260,16 +318,7 @@ vector<Token_t> updateRowVulnrabilities(vector<Token_t> tokens,vector<Token_t> f
     }
     return rowVulns;
 }
-// vector<Token_t> updateColumnVulnrabilities(vector<Token_t> tokens,vector<Token_t> frontRow,) {
-//     vector<Token_t> rowVulns;
-//     for(Token_t t: frontRow) {
-//         Point_t p = t.location;
-//         if(!checkHumanAt(tokens,p)) {
-//             rowVulns.push_back(t);
-//         }
-//     }
-//     return rowVulns;
-// }
+
 inline bool checkLegalToken(Move_t move) {
     for(Move_t m: SACMOVES) {
         if(checkSameToken(m.token,move.token) &&
@@ -504,7 +553,7 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
             move = moveDiag(tigerToken, random);
         }
     }
-    if ((tokens.size() - 1 > 9) && TIGERMOVECOUNT >= 6) {
+    if ((tokens.size() -1 > 9) && TIGERMOVECOUNT >= 6) {
         pair<bool, Move_t> scanning = singleScan(tokens, tigerToken.location);
         pair<bool, Move_t> secondScan = doubleScan(tokens);
         if (scanning.first == true) {
@@ -532,7 +581,8 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
                 move = moveVert(tigerToken, 2);
             }
         }
-    } else if (tokens.size() - 1 < 10){
+    }
+    else if (tokens.size() - 1 < 10) {
         move = moveToClosestHuman(tokens);
     }
     TIGERMOVECOUNT++;
@@ -543,6 +593,7 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
         move = pickRandom(tokens, move);
         return move;
     }
+
 }
 
 bool onDiag(Token_t token){
