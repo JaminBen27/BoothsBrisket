@@ -192,9 +192,10 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
             temp = fixColVuln(tokens,colVulnerabilities);
             collectMoves(moveList,temp);
         }
-        temp = takeDiag(tokens);
-        collectMoves(moveList,temp);
-        //MOVE FURTHEST
+        if (frontLine.size() < 3) {
+            temp = takeDiag(tokens);
+            collectMoves(moveList,temp);
+        }
         temp = getFurthestPieces(tokens,midLine,backLine);
         collectMoves(moveList,temp);
         bool badMove = true;
