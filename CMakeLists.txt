@@ -3,11 +3,11 @@ project(RBT_Group_Project)
 
 set(CMAKE_CXX_STANDARD 17)
 
-# Add SDL2 manually
-include_directories("C:/SDL2-2.30.8/x86_64-w64-mingw32/include")
-link_directories("C:/SDL2-2.30.8/x86_64-w64-mingw32/lib")
+# SDL2 via Homebrew (standard path for Intel Macs)
+find_package(SDL2 REQUIRED)
 
-set(CMAKE_EXE_LINKER_FLAGS "-mconsole")
+include_directories(${SDL2_INCLUDE_DIRS})
+link_directories(${SDL2_LIBRARY_DIRS})
 
 add_executable(RBT_Group_Project
         BearGame.h
@@ -23,4 +23,4 @@ add_executable(RBT_Group_Project
         Constants.h
 )
 
-target_link_libraries(${PROJECT_NAME} SDL2main SDL2)
+target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARIES})

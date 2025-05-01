@@ -50,11 +50,11 @@ bool checkSelfSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocati
 bool checkSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocation);
 bool checkSameToken(Token_t token1, Token_t token2);
 vector<Move_t> getFurthestPieces(vector<Token_t> tokens,vector<Token_t>,vector<Token_t>);
-bool checkRowVulnrability(vector<Token_t> tokens, Token_t piece);
+bool checkRowVulnerability(vector<Token_t> tokens, Token_t piece);
 bool checkColumnDanger(vector<Token_t> tokens, Token_t piece);
 
-vector<Token_t> updateColVulnrabilities(vector<Token_t> tokens, vector<Token_t>);
-vector<Token_t> updateRowVulnrabilities(vector<Token_t> tokens,vector<Token_t>);
+vector<Token_t> updateColVulnerabilities(vector<Token_t> tokens, vector<Token_t>);
+vector<Token_t> updateRowVulnerabilities(vector<Token_t> tokens,vector<Token_t>);
 vector<Move_t> fixRowVuln(vector<Token_t> tokens, vector<Token_t> rowVulns);
 vector<Move_t> fixColVuln(vector<Token_t> tokens, vector<Token_t> colVulns);
 
@@ -160,11 +160,12 @@ Move_t pickRandom(vector<Token_t> tokens, Move_t move) {
 }
 
 inline Move_t humanFunction(const vector<Token_t>& tokens) {
+    cout << "Human is thinking" << endl;
     Move_t m;
     Token_t token;
-    static bool earlyGame;          //First Half of Board
-    static bool midGamer;           //Second Half of Board
-    static bool lateGame;           //Cage
+    bool earlyGame;          //First Half of Board
+    bool midGamer;           //Second Half of Board
+    bool lateGame;           //Cage
 
     vector<Token_t> rowVulnerabilities;    //Pieces that are vulnerable to a vertical jump
     vector<Token_t> colVulnerabilities;    //Pieces that are vulnerable to a horizontal jump
@@ -175,17 +176,12 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
 
     queue<Move_t> moveList;
 
-
     if (HUMAN_PROGRESSION_ROW>0) {
-        //CHECK PROTECTED
-
-        //current bug is realted to checkProtectedRow RowBulnFix is not running so all the pieces are just moving up;
-        //token = checkProtectedRow(tokens);
         frontLine = getFrontRow(tokens);
         midLine = getMiddleRow(tokens);
         backLine = getBackRow(tokens);
-        rowVulnerabilities = updateRowVulnrabilities(tokens, frontLine);
-        colVulnerabilities = updateColVulnrabilities(tokens,frontLine);
+        rowVulnerabilities = updateRowVulnerabilities(tokens, tokens);
+        colVulnerabilities = updateColVulnerabilities(tokens,tokens);
 
         vector<Move_t> temp;
         if(rowVulnerabilities.size() > 0) {
@@ -196,11 +192,11 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
             temp = fixColVuln(tokens,colVulnerabilities);
             collectMoves(moveList,temp);
         }
-            temp = takeDiag(tokens);
-            collectMoves(moveList,temp);
+        temp = takeDiag(tokens);
+        collectMoves(moveList,temp);
         //MOVE FURTHEST
-            temp = getFurthestPieces(tokens,midLine,backLine);
-            collectMoves(moveList,temp);
+        temp = getFurthestPieces(tokens,midLine,backLine);
+        collectMoves(moveList,temp);
         bool badMove = true;
         while(badMove && moveList.size() > 0) {
             m = moveList.front();
@@ -248,17 +244,16 @@ vector<Move_t> fixColVuln(vector<Token_t> tokens, vector<Token_t> colVulns) {
             m.destination = p;
             moves.push_back(m);
         }
-
     }
     return moves;
 }
-vector<Token_t> updateColVulnrabilities(vector<Token_t> tokens,vector<Token_t> frontRow) {
+
+vector<Token_t> updateColVulnerabilities(vector<Token_t> tokens,vector<Token_t> frontRow) {
     vector<Token_t> colVulns;
     for(Token_t t: frontRow) {
-        Point_t p1 = t.location;
-        p1.col-=1;
-        Point_t p2 = mirror(t.location,p1);
-        if(!checkHumanAt(tokens,p1) && inBounds(p1) || !checkHumanAt(tokens,p2) && inBounds(p2)) {
+        Point_t left = {t.location.row, t.location.col  - 1};
+        Point_t right = {t.location.row, t.location.col + 1};
+        if (t.color == BLUE && checkHumanAt(tokens,left) == false && checkHumanAt(tokens,right) == false) {
             colVulns.push_back(t);
         }
     }
@@ -307,7 +302,7 @@ vector<Token_t> getBackRow(vector<Token_t> tokens) {
     }
     return row;
 }
-vector<Token_t> updateRowVulnrabilities(vector<Token_t> tokens,vector<Token_t> frontRow) {
+vector<Token_t> updateRowVulnerabilities(vector<Token_t> tokens, vector<Token_t> frontRow) {
     vector<Token_t> rowVulns;
     for(Token_t t: frontRow) {
         Point_t p = t.location;
@@ -480,14 +475,18 @@ vector<Token_t> sortDistanceFromTiger(vector<Token_t> tokens, Token_t tiger) {
     while(tokens.size() >0) {
         int index;
         Token_t maxDist = tiger;
-        for(int i=0; i < tokens.size(); i++) {
+        for(int i=1; i < tokens.size(); i++) {
             if(dist(tokens.at(i).location, tiger.location) > dist(maxDist.location,tiger.location)) {
                 maxDist = tokens.at(i);
                 index = i;
             }
         }
         list.push_back(maxDist);
-        tokens.erase(tokens.begin()+index);
+        if (tokens.size() > 1) {
+            tokens.erase(tokens.begin()+index);
+        } else {
+            tokens.erase(tokens.begin());
+        }
     }
     return list;
 }
@@ -524,12 +523,11 @@ Point_t mirror(Point_t pivot, Point_t  mirroredVal) {
     Point_t m;
      m.row = pivot.row - (mirroredVal.row- pivot.row);
      m.col = pivot.col - (mirroredVal.col- pivot.col);
-    cout << "Printing Mirror: " << m.col << " " << m.row << endl;
     return m;
-
 }
 
 inline Move_t tigerFunction(const vector<Token_t>& tokens) {
+    cout << "Tiger is thinking" << endl;
     Move_t move;
     Token_t tigerToken = tokens[0];
     move.token = tigerToken;

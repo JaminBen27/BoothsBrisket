@@ -21,7 +21,6 @@ using namespace std;
 
 
 int main() {
-
 	SDL_Plotter g(ROWS, COLUMNS);
 
 	BearGame game(g);
@@ -49,7 +48,8 @@ int main() {
 
 			}
 		}
-		g.Sleep(200);
+
+		g.Sleep(20);
 		Move_t m;
 		 if(game.isTigersTurn()){
 		 	//Move Tiger
@@ -58,14 +58,13 @@ int main() {
 		 	}
 		 }
 		 else{
-		     //Move Man
+		 	//Move Man
 		 	switch(currentBlue){
 		         case 0: m =   Move_BoothsBrisket(game.makeVector(), game.getTurn()); break;
 		 	}
 		 }
 
 		//Call Student Code
-
 		p2 = Point(m.destination.row, m.destination.col);
 		p1 = Point(m.token.location.row, m.token.location.col);
 		game.updateTokenLocation(p1,p2, g);
