@@ -81,8 +81,9 @@ vector<Point_t> getLegalMovesSquare(const vector<Token_t>&, Token_t);
 bool isOccupied(const vector<Token_t>&, Point_t);
 Move_t takeHuman ( Token_t tiger, const vector<Token_t>& tokens, Point_t goal );
 bool checkOpen (const vector<Token_t>& tokens, Point_t pt);
-pair<bool, Move_t> singleScan(vector<Token_t> tokens);
+pair<bool, Move_t> singleScan(vector<Token_t> tokens, Point_t pos);
 pair<bool,Move_t> doubleScan(vector<Token_t> tokens);
+Move_t moveToClosestHuman(vector<Token_t> tokens);
 
 inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens, Color_t c) {
     if (c == RED) {
@@ -131,6 +132,30 @@ Move_t pickRandom (const vector<Token_t>& tokens) {
             move.destination.row = move.token.location.row - 1;
         }
     } while (checkLegalMove(tokens, move) == false);
+    return move;
+}
+
+Move_t pickRandom(vector<Token_t> tokens, Move_t move) {
+    move.destination = move.token.location;
+    do {
+        if (rand() % 2 == 0) {
+            if (rand() % 2 == 0) {
+                move.destination.col++;
+            }
+            else {
+                move.destination.col--;
+            }
+        }
+        else {
+            if (rand() % 2 == 0) {
+                move.destination.row++;
+            }
+            else {
+                move.destination.row--;
+            }
+        }
+    } while (checkLegalMove(tokens, move) == false);
+
     return move;
 }
 
@@ -494,10 +519,12 @@ bool checkSameToken(Token_t token1, Token_t token2) {
 // EX: mirror ( (2,1) , (2,2) ) returns 2,3
 // works for diagonals
 // be careful not to mirror long distances
+//move dest ( 10,4), tigerPos ( 11,4)
 Point_t mirror(Point_t pivot, Point_t  mirroredVal) {
     Point_t m;
      m.row = pivot.row - (mirroredVal.row- pivot.row);
      m.col = pivot.col - (mirroredVal.col- pivot.col);
+    cout << "Printing Mirror: " << m.col << " " << m.row << endl;
     return m;
 
 }
@@ -526,37 +553,50 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
             move = moveDiag(tigerToken, random);
         }
     }
-    if ( TIGERMOVECOUNT >= 6) {
-        pair<bool, Move_t> scanning = singleScan(tokens);
-        if(scanning.first == true){
-            cout << "found target" << endl ;
+    bool DONTHUNT = false;
+    if (TIGERMOVECOUNT >= 6) {
+        pair<bool, Move_t> scanning = singleScan(tokens, tigerToken.location);
+        pair<bool, Move_t> secondScan = doubleScan(tokens);
+        DONTHUNT = true;
+        if (scanning.first == true) {
+            cout << "found target" << endl;
             move.destination = scanning.second.destination;
-            if (isOccupied(tokens, move.destination)){
-                if (checkOpen(tokens, move.destination)){
+            if (isOccupied(tokens, move.destination)) {
+                if (checkOpen(tokens, move.destination)) {
                     Point_t mir = mirror(move.destination, tigerToken.location);
                     move = takeHuman(tigerToken, tokens, mir);
-                    cout << "die die die" << endl ;
+                    if (inBounds(move.destination)) {
+                        cout << "AHHHHHHHHHHHHHHHHHH" << endl;
+                    }
+                    cout << "die die die" << endl;
+                    cout << "die die die" << move.destination.col << ", " << move.destination.row << endl ;
                 } else {
                     move = moveVert(tigerToken, 1);
                 }
             }
+        } else if (secondScan.first == true) {
+            cout << "Hunting" << endl;
+            move.destination = secondScan.second.destination;
         } else {
-            if (isOccupied(tokens, moveVert(tigerToken, 2).destination)){
+            if (isOccupied(tokens, moveVert(tigerToken, 2).destination)) {
                 move = moveVert(tigerToken, 1);
             } else {
                 move = moveVert(tigerToken, 2);
             }
         }
+    }
+        if ((tokens.size() - 1 < 10) && DONTHUNT == false) {
+            move = moveToClosestHuman(tokens);
+        }
+        TIGERMOVECOUNT++;
+        if ( inBounds(move.destination)) {
+            return move;
+        }
+        else {
+            move = pickRandom(tokens, move);
+            return move;
+        }
 
-    }
-    TIGERMOVECOUNT++;
-    if ( inBounds(move.destination)) {
-        return move;
-    }
-    else {
-        move = move = moveVert(tigerToken, 1);
-        return move;
-    }
 }
 
 bool onDiag(Token_t token){
@@ -588,7 +628,9 @@ bool checkOpen (const vector<Token_t>& tokens, Point_t pt) {
         Point_t mir = mirror(pt, tigerToken.location);
 
         if (!isOccupied(tokens, mir)) {
-            takeable = true;
+            if ( inBounds(mir) ) {
+                takeable = true;
+            }
         }
 
     }
@@ -763,8 +805,9 @@ bool inBounds(Point_t pt){
     return true;
 }
 
-pair<bool, Move_t> singleScan(vector<Token_t> tokens){
-    Token_t tigerToken = tokens[0];
+pair<bool, Move_t> singleScan(vector<Token_t> tokens, Point_t pos){
+    Token_t tigerToken;
+    tigerToken.location = pos;
     pair<bool, Move_t> movesReturn;
     Point_t tempMove;
     movesReturn.second.token = tigerToken;
@@ -838,6 +881,7 @@ pair<bool,Move_t> doubleScan(vector<Token_t> tokens){
     //TODO: THIS LOGIC MAKES NO SENSE, AND I AM VERY TIRED, GOODNIGHT
     Token_t tigerToken = tokens[0];
     pair<bool, Move_t> movesReturn;
+    pair<bool, Move_t> scanResult;
     Point_t tempMove;
     movesReturn.second.token = tigerToken;
     double tolerance = 0.0001;
@@ -846,14 +890,15 @@ pair<bool,Move_t> doubleScan(vector<Token_t> tokens){
         for (int i = 0; i < DIAGONAL_COORDINATES.size(); i++){
             if (abs(dist(tigerToken.location,
                          DIAGONAL_COORDINATES[i]) - sqrt(2)) < tolerance) {
-                if (checkOpen(tokens, DIAGONAL_COORDINATES[i])){
+                if (! isOccupied(tokens, DIAGONAL_COORDINATES[i])){
                     movesReturn.first = true;
                     movesReturn.second.destination = DIAGONAL_COORDINATES[i];
-                    if(inBounds(movesReturn.second.destination) &&
-                       !(movesReturn.second.token == tigerToken)){
-                        return movesReturn;
+                    if(inBounds(movesReturn.second.destination)){
+                        scanResult = singleScan(tokens, movesReturn.second.destination);
+                        if ( scanResult.first ) {
+                            return movesReturn;
+                        }
                     }
-
                 }
             }
         }
@@ -862,48 +907,56 @@ pair<bool,Move_t> doubleScan(vector<Token_t> tokens){
     //Check Right for takeable
     tempMove = tigerToken.location;
     tempMove.col++;
-    if(checkOpen(tokens, tempMove)){
+    if(! isOccupied(tokens, tempMove)){
         movesReturn.first = true;
         movesReturn.second.destination = tempMove;
-        if(inBounds(movesReturn.second.destination) &&
-           !(movesReturn.second.token == tigerToken)){
-            return movesReturn;
+        if(inBounds(movesReturn.second.destination)){
+            scanResult = singleScan(tokens, movesReturn.second.destination);
+            if ( scanResult.first ) {
+                return movesReturn;
+            }
         }
     }
 
     //Check Left for takeable
     tempMove = tigerToken.location;
     tempMove.col--;
-    if(checkOpen(tokens, tempMove)){
+    if(! isOccupied(tokens, tempMove)){
         movesReturn.first = true;
         movesReturn.second.destination = tempMove;
-        if(inBounds(movesReturn.second.destination) &&
-           !(movesReturn.second.token == tigerToken)){
-            return movesReturn;
+        if(inBounds(movesReturn.second.destination)){
+            scanResult = singleScan(tokens, movesReturn.second.destination);
+            if ( scanResult.first ) {
+                return movesReturn;
+            }
         }
     }
 
     //Check Up for takeable
     tempMove = tigerToken.location;
     tempMove.row++;
-    if(checkOpen(tokens, tempMove)){
+    if(! isOccupied(tokens, tempMove)){
         movesReturn.first = true;
         movesReturn.second.destination = tempMove;
-        if(inBounds(movesReturn.second.destination) &&
-           !(movesReturn.second.token == tigerToken)){
-            return movesReturn;
+        if(inBounds(movesReturn.second.destination)){
+            scanResult = singleScan(tokens, movesReturn.second.destination);
+            if ( scanResult.first ) {
+                return movesReturn;
+            }
         }
     }
 
     //Check Down for takeable
     tempMove = tigerToken.location;
     tempMove.row--;
-    if(checkOpen(tokens, tempMove)){
+    if(! isOccupied(tokens, tempMove)){
         movesReturn.first = true;
         movesReturn.second.destination = tempMove;
-        if(inBounds(movesReturn.second.destination) &&
-           !(movesReturn.second.token == tigerToken)){
-            return movesReturn;
+        if(inBounds(movesReturn.second.destination)){
+            scanResult = singleScan(tokens, movesReturn.second.destination);
+            if ( scanResult.first ) {
+                return movesReturn;
+            }
         }
     }
 
@@ -938,4 +991,124 @@ void collectMoves(queue<Move_t>& q, vector<Move_t> moves) {
     for(Move_t m: moves) {
         q.push(m);
     }
+}
+
+Move_t moveToClosestHuman(vector<Token_t> tokens) {
+    Token_t tigerToken = tokens[0];
+    Move_t move;
+    move.token = tigerToken;
+
+    // First check if any humans are directly capturable
+    pair<bool, Move_t> scanning = singleScan(tokens, tigerToken.location);
+    pair<bool, Move_t> secondScan = doubleScan(tokens);
+
+    if (scanning.first) {
+        return scanning.second;
+    } else if (secondScan.first) {
+        return secondScan.second;
+    }
+
+    // Find the closest human
+    int closestIndex = 1;
+    double closestDistance = dist(tigerToken.location, tokens[1].location);
+
+    for (int i = 2; i < tokens.size(); i++) {
+        double currentDist = dist(tigerToken.location, tokens[i].location);
+        if (currentDist < closestDistance) {
+            closestIndex = i;
+            closestDistance = currentDist;
+        }
+    }
+
+    // Get the closest human token
+    Token_t closestHuman = tokens[closestIndex];
+    Point_t destination = tigerToken.location;
+
+    if (closestHuman.location.col == tigerToken.location.col) {
+        if (closestHuman.location.row < tigerToken.location.row) {
+            // Human is above tiger
+            destination.row--;
+        } else {
+            // Human is below tiger
+            destination.row++;
+        }
+    } else if (closestHuman.location.row == tigerToken.location.row) {
+        if (closestHuman.location.col < tigerToken.location.col) {
+            // Human is to the left
+            destination.col--;
+        } else {
+            // Human is to the right
+            destination.col++;
+        }
+    } else {
+        // We need to move diagonally if possible, or choose the best direction
+        int rowDiff = closestHuman.location.row - tigerToken.location.row;
+        int colDiff = closestHuman.location.col - tigerToken.location.col;
+
+        if (onDiag(tigerToken) && onDiag(closestHuman)) {
+            destination.row += (rowDiff > 0) ? 1 : -1;
+            destination.col += (colDiff > 0) ? 1 : -1;
+        } else {
+            if (abs(rowDiff) > abs(colDiff)) {
+                destination.row += (rowDiff > 0) ? 1 : -1;
+            } else {
+                destination.col += (colDiff > 0) ? 1 : -1;
+            }
+        }
+    }
+
+    // Ensure the destination is valid
+    if (!inBounds(destination) || isOccupied(tokens, destination)) {
+        // If the preferred move isn't valid, try alternatives
+        vector<Point_t> possibleMoves;
+
+        Point_t vertMove = tigerToken.location;
+        vertMove.row += (closestHuman.location.row > tigerToken.location.row) ? 1 : -1;
+        if (inBounds(vertMove) && !isOccupied(tokens, vertMove)) {
+            possibleMoves.push_back(vertMove);
+        }
+
+        Point_t horzMove = tigerToken.location;
+        horzMove.col += (closestHuman.location.col > tigerToken.location.col) ? 1 : -1;
+        if (inBounds(horzMove) && !isOccupied(tokens, horzMove)) {
+            possibleMoves.push_back(horzMove);
+        }
+
+        if (onDiag(tigerToken)) {
+            for (int rowDir = -1; rowDir <= 1; rowDir += 2) {
+                for (int colDir = -1; colDir <= 1; colDir += 2) {
+                    Point_t diagMove = tigerToken.location;
+                    diagMove.row += rowDir;
+                    diagMove.col += colDir;
+                    if (inBounds(diagMove) && !isOccupied(tokens, diagMove)) {
+                        Token_t tempToken;
+                        tempToken.location = diagMove;
+
+                        if (onDiag(tempToken)) {
+                            possibleMoves.push_back(diagMove);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Choose the move that gets us closest to the human
+        if (!possibleMoves.empty()) {
+            Point_t bestMove = possibleMoves[0];
+            double bestDist = dist(bestMove, closestHuman.location);
+
+            for (const Point_t& p : possibleMoves) {
+                double currentDist = dist(p, closestHuman.location);
+                if (currentDist < bestDist) {
+                    bestDist = currentDist;
+                    bestMove = p;
+                }
+            }
+
+            destination = bestMove;
+        }
+    }
+
+    move.destination = destination;
+    return move;
 }
