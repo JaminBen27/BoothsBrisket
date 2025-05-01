@@ -504,9 +504,11 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
             move = moveDiag(tigerToken, random);
         }
     }
-    if ((tokens.size() - 1 > 9) && TIGERMOVECOUNT >= 6) {
+    bool DONTHUNT = false;
+    if (TIGERMOVECOUNT >= 6) {
         pair<bool, Move_t> scanning = singleScan(tokens, tigerToken.location);
         pair<bool, Move_t> secondScan = doubleScan(tokens);
+        DONTHUNT = true;
         if (scanning.first == true) {
             cout << "found target" << endl;
             move.destination = scanning.second.destination;
@@ -533,17 +535,19 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
                 move = moveVert(tigerToken, 2);
             }
         }
-    } else if (tokens.size() - 1 < 10){
-        move = moveToClosestHuman(tokens);
     }
-    TIGERMOVECOUNT++;
-    if ( inBounds(move.destination)) {
-        return move;
-    }
-    else {
-        move = moveVert(tigerToken, 1);
-        return move;
-    }
+        if ((tokens.size() - 1 < 10) && DONTHUNT == false) {
+            move = moveToClosestHuman(tokens);
+        }
+        TIGERMOVECOUNT++;
+        if ( inBounds(move.destination)) {
+            return move;
+        }
+        else {
+            move = pickRandom(tokens, move);
+            return move;
+        }
+
 }
 
 bool onDiag(Token_t token){
