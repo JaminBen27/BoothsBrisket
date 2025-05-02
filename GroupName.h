@@ -10,6 +10,7 @@
 #include <list>
 
 #include "constants.h"
+#include "BearGame.h"
 
 using namespace std;
 const vector<Point_t> DIAGONAL_COORDINATES = {
@@ -92,7 +93,7 @@ bool isOccupied(const vector<Token_t>&, Point_t);
 Move_t takeHuman ( Token_t tiger, const vector<Token_t>& tokens, Point_t goal );
 bool checkOpen (const vector<Token_t>& tokens, Point_t pt);
 pair<bool, Move_t> singleScan(vector<Token_t> tokens, Point_t pos);
-pair<bool, Move_t> doubleScan(vector<Token_t> tokens);
+pair<bool,Move_t> doubleScan(vector<Token_t> tokens);
 Move_t moveToClosestHuman(vector<Token_t> tokens);
 Move_t groupCenterBias(vector<Token_t> tokens);
 vector<Point_t> getLegalMoveCage(const vector<Token_t>& tokens, Token_t token);
@@ -253,6 +254,8 @@ vector<Point_t> getAdjacentCageCords(Point_t p) {
     points.push_back({p.row+1,p.col-1});
     points.push_back({p.row-1,p.col+1});
     return points;
+
+
 }
 vector<Move_t> getBoxMoves(vector<Token_t> tokens,vector<Token_t> boxTokens,Token_t tiger) {
     vector<Move_t> possibleMoves;
@@ -728,9 +731,6 @@ bool checkLegalMove(const vector<Token_t>& tokens, Move_t move) {
     }
     if (move.destination.row < 4 || move.destination.row > 12) {
         return false;
-    }
-    if (isOccupied(tokens, move.token.location) == true) {
-        return true;
     }
     return true;
 }
@@ -1490,6 +1490,49 @@ Move_t groupCenterBias(vector<Token_t> tokens) {
     if (!inBounds(move.destination) || isOccupied(tokens, move.destination) ||
         dist(tigerToken.location, move.destination) > sqrt(2) + 0.0001) {
         return pickRandom(tokens, move);
+    }
+
+    move = checkCageSpots(move, tokens);
+
+    return move;
+}
+
+Move_t checkCageSpots(Move_t move, vector<Token_t> tokens){
+    // A quick fix for some known bad moves near where the normal field
+    // And cage intersect.
+    Token_t tigerToken = tokens[0];
+    Point_t tempPoint = {3,5};
+    Point_t tempPoint2 = {5,5};
+    Point_t tempPoint3 = {3,3};
+    Point_t tempPoint4 = {5,3};
+    Point_t tempPoint5 = {4,3};
+    Point_t tempPoint6 = {4,5};
+    if ((move.destination == tempPoint && tigerToken.location == tempPoint2) ||
+        (move.destination == tempPoint2 && tigerToken.location == tempPoint)) {
+        cout << "Blocking bad move" << endl;
+        move = pickRandom(tokens, move);
+        move = checkCageSpots(move, tokens);
+    }
+
+    if ((move.destination == tempPoint3 && tigerToken.location == tempPoint4) ||
+        (move.destination == tempPoint4 && tigerToken.location == tempPoint3)) {
+        cout << "Blocking bad move" << endl;
+        move = pickRandom(tokens, move);
+        move = checkCageSpots(move, tokens);
+    }
+
+    if ((move.destination == tempPoint3 && tigerToken.location == tempPoint5) ||
+        (move.destination == tempPoint5 && tigerToken.location == tempPoint3)) {
+        cout << "Blocking bad move" << endl;
+        move = pickRandom(tokens, move);
+        move = checkCageSpots(move, tokens);
+    }
+
+    if ((move.destination == tempPoint && tigerToken.location == tempPoint6) ||
+        (move.destination == tempPoint6 && tigerToken.location == tempPoint)) {
+        cout << "Blocking bad move" << endl;
+        move = pickRandom(tokens, move);
+        move = checkCageSpots(move, tokens);
     }
 
     return move;
