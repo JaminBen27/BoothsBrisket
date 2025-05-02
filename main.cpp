@@ -49,7 +49,7 @@ int main() {
 			}
 		}
 
-		g.Sleep(20);
+		g.Sleep(10);
 		Move_t m;
 		 if(game.isTigersTurn()){
 		 	//Move Tiger
