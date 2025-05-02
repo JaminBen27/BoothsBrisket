@@ -11,6 +11,8 @@
 #include <cstdlib>
 #include <ctime>
 #include <algorithm>
+#include <list>
+
 #include "constants.h"
 #include "BearGame.h"
 
@@ -25,10 +27,12 @@ const vector<Point_t> CAGE_COORDINATES = {
 
 static int TIGERMOVECOUNT = 1;
 static int HUMAN_PROGRESSION_ROW = 10;
+static bool ENDGAME = false;
 static vector<Move_t> SACMOVES;
 
 //Game Phases
 //GENERIC USEFUL FUNCTIONS
+bool checkLegalMove(const vector<Token_t>& tokens, Move_t move);
 double dist(Point_t p1, Point_t p2);
 Point_t mirror(Point_t pivot, Point_t  mirroredVal);
 bool onDiag(Token_t);
@@ -39,10 +43,12 @@ Move_t moveVert(Token_t, int);
 bool checkHumanAt(vector<Token_t> tokens, Point_t  p);
 Token_t getHumanAt(vector<Token_t> tokens, Point_t  p);
 bool inBounds(Point_t pt);
+bool isSamePoint(Point_t p1, Point_t p2);
 //------------------------------------------------------------------
 //------------------------------------------------------------------
 //------------------------------------------------------------------
 //HUMAN SPECIFIC FUNTIONS
+Move_t pickRandom (const vector<Token_t>& tokens);
 Move_t humanFunction(const vector<Token_t>& tokens );
 bool checkAdj(Token_t tiger, Point_t p);
 bool checkSelfSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocation);
@@ -64,17 +70,26 @@ void updateProgressionRow(vector<Token_t> tokens);
 vector<Point_t> availableDiag(vector<Token_t> tokens);
 vector<Move_t> takeDiag(vector<Token_t> tokens);
 bool checkBadMove(vector<Token_t> tokens, Move_t m);
-bool checkLegalToken(Move_t);
 void collectMoves(queue<Move_t>&, vector<Move_t>);
-
+Token_t getAbsFurthest(vector<Token_t> tokens);
+Move_t tempo(vector<Token_t>);
 vector<Token_t> getFrontRow(vector<Token_t>);
 vector<Token_t> getMiddleRow(vector<Token_t>);
 vector<Token_t> getBackRow(vector<Token_t>);
+int  getHalf(Point_t p);
+//HUMAN END GAME FUNCTIONS
+Move_t moveTo(Token_t t, Point_t p);
+vector<Token_t> getBoxHumans(vector<Token_t> tokens);
+vector<Move_t> getReplacementMoves(vector<Token_t> tokens);
+Move_t moveTo(Token_t t, Point_t p);
+vector<Move_t> getBoxMoves(vector<Token_t> tokens,vector<Token_t> boxTokens,Token_t tiger);
+void proccessDiagonals(vector<Move_t>& moves);
 
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 //TIGER SPECIFIC FUNCTIONS
+Move_t pickRandom(vector<Token_t> tokens, Move_t move);
 Move_t tigerFunction(const vector<Token_t>&);
 vector<Point_t> getLegalMovesCage(const vector<Token_t>&, Token_t);
 vector<Point_t> getLegalMovesSquare(const vector<Token_t>&, Token_t);
@@ -84,79 +99,13 @@ bool checkOpen (const vector<Token_t>& tokens, Point_t pt);
 pair<bool, Move_t> singleScan(vector<Token_t> tokens, Point_t pos);
 pair<bool,Move_t> doubleScan(vector<Token_t> tokens);
 Move_t moveToClosestHuman(vector<Token_t> tokens);
+vector<Point_t> getLegalMoveCage(const vector<Token_t>& tokens, Token_t token);
 
 inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens, Color_t c) {
     if (c == RED) {
         return tigerFunction(tokens);
     }
     return humanFunction(tokens);
-}
-
-//Checks if a move is legal (i.e. move is in bounds & destination is unoccupied)
-//Does not account for the cage
-bool checkLegalMove(const vector<Token_t>& tokens, Move_t move) {
-    for (Token_t t: tokens) {
-        if (t.location == move.destination) {
-            return false;
-        }
-    }
-    if (move.destination.col < 0 || move.destination.col > 8) {
-        return false;
-    }
-    if (move.destination.row < 4 || move.destination.row > 12) {
-        return false;
-    }
-    return true;
-}
-
-Move_t pickRandom (const vector<Token_t>& tokens) {
-    Move_t move;
-    do {
-        do {
-            size_t i = rand() % tokens.size();
-            move.token.color = tokens[i].color;
-            move.token.location.row = tokens[i].location.row;
-            move.token.location.col = tokens[i].location.col;
-            move.destination.row = tokens[i].location.row;
-            move.destination.col = tokens[i].location.col;
-        } while (move.token.color == RED);
-
-        int direction = rand() % 4;
-        if (direction == 0) {
-            move.destination.col = move.token.location.col + 1;
-        } else if (direction == 1) {
-            move.destination.col = move.token.location.col - 1;
-        } else if (direction == 2) {
-            move.destination.row = move.token.location.row + 1;
-        } else {
-            move.destination.row = move.token.location.row - 1;
-        }
-    } while (checkLegalMove(tokens, move) == false);
-    return move;
-}
-
-Move_t pickRandom(vector<Token_t> tokens, Move_t move) {
-    move.destination = move.token.location;
-    do {
-        if (rand() % 2 == 0) {
-            if (rand() % 2 == 0) {
-                move.destination.col++;
-            }
-            else {
-                move.destination.col--;
-            }
-        }
-        else {
-            if (rand() % 2 == 0) {
-                move.destination.row++;
-            }
-            else {
-                move.destination.row--;
-            }
-        }
-    } while (checkLegalMove(tokens, move) == false);
-
-    return move;
 }
 
 inline Move_t humanFunction(const vector<Token_t>& tokens) {
@@ -175,15 +124,41 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
     vector<Token_t> backLine;
 
     queue<Move_t> moveList;
+    vector<Move_t> temp;
 
-    if (HUMAN_PROGRESSION_ROW>0) {
+    updateProgressionRow(tokens);
+    if(HUMAN_PROGRESSION_ROW == 3) {
+        ENDGAME = true;
+        //PHASE 1
+        vector<Token_t> boxHumans;
+        boxHumans = getBoxHumans(tokens);
+        if(!checkHumanAt(tokens,{4,4})) {
+            temp = getReplacementMoves(tokens);
+            collectMoves(moveList,temp);
+        }
+        temp = getBoxMoves(tokens,boxHumans,tokens[0]);
+        collectMoves(moveList,temp);
+
+        bool badMove = true;
+        while(badMove && !moveList.empty()) {
+            m = moveList.front();
+            moveList.pop();
+            badMove = checkBadMove(tokens,m);
+        }
+        if (badMove) {
+            m= tempo(tokens);
+            //return pickRandom(tokens);
+            cout << " breakpoin";
+        }
+        cout << "BREAKPOINT LINE" << endl;
+    }
+    else if (HUMAN_PROGRESSION_ROW>0) {
         frontLine = getFrontRow(tokens);
         midLine = getMiddleRow(tokens);
         backLine = getBackRow(tokens);
         rowVulnerabilities = updateRowVulnerabilities(tokens, tokens);
         colVulnerabilities = updateColVulnerabilities(tokens,tokens);
 
-        vector<Move_t> temp;
         if(rowVulnerabilities.size() > 0) {
             temp = fixRowVuln(tokens,rowVulnerabilities);
             collectMoves(moveList,temp);
@@ -207,11 +182,149 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
         if (badMove) {
             return pickRandom(tokens);
         }
-        SACMOVES.clear();
-        updateProgressionRow(tokens);
     }
 
+
+    if(HUMAN_PROGRESSION_ROW ==3) {
+        cout << "DEBUG";
+    }
     return m;
+}
+void proccessDiagonals(vector<Move_t>& moves) {
+    Point_t goodDiags[] = {{2,6},{2,2},{0,4}};
+    vector<Move_t> temp;
+    for(int i=0; i < moves.size(); i++) {
+        for(Point_t p: goodDiags) {
+            if(isSamePoint(p,moves[i].token.location)) {
+                moves.erase(moves.begin()+i);
+                i--;
+            }
+            if(isSamePoint(p,moves[i].destination)) {
+                temp.push_back(moves.at(i));
+            }
+        }
+    }
+    for(Move_t t: moves) {
+        temp.push_back(t);
+    }
+    moves = temp;
+}
+vector<Point_t> getAdjacentCageCords(Point_t p) {
+    vector<Point_t> points;
+    points.push_back({p.row+1,p.col+1});
+    points.push_back({p.row-1,p.col-1});
+    points.push_back({p.row+1,p.col-1});
+    points.push_back({p.row-1,p.col+1});
+    return points;
+
+
+}
+vector<Move_t> getBoxMoves(vector<Token_t> tokens,vector<Token_t> boxTokens,Token_t tiger) {
+    vector<Move_t> possibleMoves;
+    //check if tiger next to exit
+    if(isSamePoint(tiger.location,{3,3}) || isSamePoint(tiger.location,{3,5})){
+        possibleMoves.push_back(tempo(tokens));
+        return possibleMoves;
+    }
+    for(Token_t t: boxTokens) {
+        vector<Point_t> points = getAdjacentCageCords(t.location);
+        for(Point_t p: points) {
+            bool b = inCage({BLUE,p});
+            bool legal = checkLegalMove(tokens,{t,p});
+            bool capture =isSamePoint( mirror(p,tiger.location),t.location);
+            bool backwards = isSamePoint(p,{4,4});
+            if(b && legal && !capture && !backwards) {
+                possibleMoves.push_back({t,p});
+            }
+        }
+    }
+    proccessDiagonals(possibleMoves);
+    return possibleMoves;
+}
+bool isSamePoint(Point_t p1, Point_t p2) {
+    return p1.col == p2.col && p1.row == p2.row;
+}
+vector<Token_t> getBoxHumans(vector<Token_t> tokens) {
+    vector<Token_t> boxTokens;
+    for(Token_t t: tokens) {
+        for(Point_t p: CAGE_COORDINATES) {
+            if(isSamePoint(p,t.location) && t.color == BLUE) {
+                boxTokens.push_back(t);
+            }
+        }
+    }
+    return boxTokens;
+}
+vector<Move_t> getReplacementMoves(vector<Token_t> tokens) {
+    Point_t godSpot = {4,4};
+    vector<Move_t> listMoves;
+    Move_t m;
+    if(!checkHumanAt(tokens,{4,4})) {
+        for(Token_t t: tokens) {
+            if(dist(t.location,godSpot) == 1) {
+                listMoves.push_back(moveTo(t,godSpot));
+            }
+        }
+    }
+    else {
+        for(Token_t t: tokens) {
+            if(dist(t.location,godSpot) == 2) {
+                Move_t tempMove = moveTo(t,godSpot);
+                if(!checkHumanAt(tokens,tempMove.destination))
+                    listMoves.push_back(moveTo(t,godSpot));
+            }
+        }
+    }
+    return listMoves;
+}
+Move_t moveTo(Token_t t, Point_t p) {
+    Move_t m;
+    m.token = t;
+    //TODO: REFACTOR: incage() should take a point
+    if(!inCage(t)) {
+        if(t.location.row == p.row) {
+            if(t.location.col > p.col) {
+                m.destination = {t.location.row,t.location.col-1};
+            }
+            else {
+                m.destination = {t.location.row,t.location.col+1};
+            }
+        }
+        else {
+            m.destination = {t.location.row-1,t.location.col};
+        }
+    }
+    return m;
+}
+Move_t tempo(vector<Token_t> tokens) {
+    Token_t token = getAbsFurthest(tokens);
+    if(ENDGAME) {
+        vector<Move_t> replaceMoves = getReplacementMoves(tokens);
+        if(replaceMoves.size()>0) {
+            return replaceMoves[0];
+        }
+    }
+    Move_t m;
+    m.token = token;
+    Point_t p1 = {HUMAN_PROGRESSION_ROW+2, token.location.col};
+    Point_t p2 = {HUMAN_PROGRESSION_ROW+3, token.location.col};
+    if(token.location.row == p1.row) {
+        m.destination = p2;
+    }
+    else
+        m.destination = p1;
+    return m;
+}
+Token_t getAbsFurthest(vector<Token_t> tokens) {
+    Token_t tiger = tokens.at(0);
+    tokens.erase(tokens.begin()+1);
+    Token_t maxDist = tiger;
+    for(Token_t t: tokens) {
+        if(dist(t.location,tiger.location) > dist(maxDist.location,tiger.location)) {
+            maxDist = t;
+        }
+    }
+    return maxDist;
 }
 int  getHalf(Point_t p) {
     Point_t temp = p;
@@ -229,6 +342,8 @@ int  getHalf(Point_t p) {
     if(p.col > 4 && !inBounds(temp)) {
         return -1;
     }
+    cout << "ERROR ThIS SHOULD NOT BE PRINTING(GETHALF)";
+    return 0;
 }
 vector<Move_t> fixColVuln(vector<Token_t> tokens, vector<Token_t> colVulns) {
     vector<Move_t> moves;
@@ -324,16 +439,6 @@ vector<Token_t> updateRowVulnerabilities(vector<Token_t> tokens, vector<Token_t>
     return rowVulns;
 }
 
-inline bool checkLegalToken(Move_t move) {
-    for(Move_t m: SACMOVES) {
-        if(checkSameToken(m.token,move.token) &&
-            m.destination.row == move.destination.row &&
-            m.destination.col == move.destination.col) {
-            return false;
-        }
-    }
-    return true;
-}
 
 bool checkBadMove(vector<Token_t> tokens, Move_t m) {
     //2 bools for easier debugging
@@ -430,11 +535,16 @@ vector<Point_t> availableDiag(vector<Token_t> tokens) {
 }
 void updateProgressionRow(vector<Token_t> tokens) {
     if(HUMAN_PROGRESSION_ROW == 8) {
-        cout << "DEBUG";
+        //cout << "DEBUG";
     }
     Token_t tiger = tokens[0];
     tokens.erase(tokens.begin());
     int count =0;
+    Point_t key = {2,4};
+    if(HUMAN_PROGRESSION_ROW ==3 && inCage(tiger) && checkHumanAt(tokens,key)) {
+        return;
+    }
+
     for(Token_t t: tokens) {
         if(t.location.row == HUMAN_PROGRESSION_ROW) {
             count++;
@@ -536,6 +646,103 @@ Point_t mirror(Point_t pivot, Point_t  mirroredVal) {
     return m;
 }
 
+bool checkHumanAt(vector<Token_t> tokens, Point_t  p) {
+    for(Token_t t: tokens) {
+        if(t.location.col == p.col && t.location.row == p.row) {
+            return true;
+        }
+    }
+    return false;
+}
+Token_t getHumanAt(vector<Token_t> tokens, Point_t  p) {
+    if(checkHumanAt(tokens,p)) {
+        for(Token_t t: tokens) {
+            if(t.location.col == p.col && t.location.row == p.row) {
+                return t;
+            }
+        }
+    }
+    else {
+        cout << "ERROR: HUMAN DOESNT EXIST";
+    }
+    return tokens[0];
+
+}
+void collectMoves(queue<Move_t>& q, vector<Move_t> moves) {
+    for(Move_t m: moves) {
+        q.push(m);
+    }
+}
+
+//Checks if a move is legal (i.e. move is in bounds & destination is unoccupied)
+//Does not account for the cage
+bool checkLegalMove(const vector<Token_t>& tokens, Move_t move) {
+    for (Token_t t: tokens) {
+        if (t.location == move.destination) {
+            return false;
+        }
+    }
+    for(Point_t p: CAGE_COORDINATES) {
+        if(isSamePoint(move.destination,p)) {
+            return true;
+        }
+    }
+    if (move.destination.col < 0 || move.destination.col > 8) {
+        return false;
+    }
+    if (move.destination.row < 4 || move.destination.row > 12) {
+        return false;
+    }
+    return true;
+}
+
+Move_t pickRandom (const vector<Token_t>& tokens) {
+    Move_t move;
+    do {
+        do {
+            size_t i = rand() % tokens.size();
+            move.token.color = tokens[i].color;
+            move.token.location.row = tokens[i].location.row;
+            move.token.location.col = tokens[i].location.col;
+            move.destination.row = tokens[i].location.row;
+            move.destination.col = tokens[i].location.col;
+        } while (move.token.color == RED);
+
+        int direction = rand() % 4;
+        if (direction == 0) {
+            move.destination.col = move.token.location.col + 1;
+        } else if (direction == 1) {
+            move.destination.col = move.token.location.col - 1;
+        } else if (direction == 2) {
+            move.destination.row = move.token.location.row + 1;
+        } else {
+            move.destination.row = move.token.location.row - 1;
+        }
+    } while (checkLegalMove(tokens, move) == false);
+    return move;
+}Move_t pickRandom(vector<Token_t> tokens, Move_t move) {
+    move.destination = move.token.location;
+    do {
+        if (rand() % 2 == 0) {
+            if (rand() % 2 == 0) {
+                move.destination.col++;
+            }
+            else {
+                move.destination.col--;
+            }
+        }
+        else {
+            if (rand() % 2 == 0) {
+                move.destination.row++;
+            }
+            else {
+                move.destination.row--;
+            }
+        }
+    } while (checkLegalMove(tokens, move) == false);
+
+    return move;
+}
 inline Move_t tigerFunction(const vector<Token_t>& tokens) {
     cout << "Tiger is thinking" << endl;
     Move_t move;
@@ -543,6 +750,13 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
     move.token = tigerToken;
     int random = rand();
 
+    // //BENS TESTING ALG
+    //
+    // vector<Point_t> p;
+    // p = getLegalMoveCage(tokens,tigerToken);
+    // random = random%p.size();
+    // move.destination = p[random];
+    // return move;
     //Temporary fix for picking left or right randomly
     if (random % 2 == 0){
         random = 1;
@@ -731,6 +945,7 @@ Move_t moveDiag(Token_t item, int direction){
     Point_t location = item.location;
     Move_t newLocation;
     newLocation.token = item;
+    //newLocation.destination =item.location;
     switch (direction) {
         case 1: // down right
             newLocation.destination.row = location.row + 1;
@@ -970,33 +1185,6 @@ pair<bool,Move_t> doubleScan(vector<Token_t> tokens){
     return movesReturn;
 }
 
-bool checkHumanAt(vector<Token_t> tokens, Point_t  p) {
-    for(Token_t t: tokens) {
-        if(t.location.col == p.col && t.location.row == p.row) {
-            return true;
-        }
-    }
-    return false;
-}
-Token_t getHumanAt(vector<Token_t> tokens, Point_t  p) {
-    if(checkHumanAt(tokens,p)) {
-        for(Token_t t: tokens) {
-            if(t.location.col == p.col && t.location.row == p.row) {
-                return t;
-            }
-        }
-    }
-    else {
-        cout << "ERROR: HUMAN DOESNT EXIST";
-    }
-    return tokens[0];
-
-}
-void collectMoves(queue<Move_t>& q, vector<Move_t> moves) {
-    for(Move_t m: moves) {
-        q.push(m);
-    }
-}
 
 Move_t moveToClosestHuman(vector<Token_t> tokens) {
     Token_t tigerToken = tokens[0];
