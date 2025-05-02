@@ -32,7 +32,7 @@ static vector<Move_t> SACMOVES;
 double dist(Point_t p1, Point_t p2);
 Point_t mirror(Point_t pivot, Point_t  mirroredVal);
 bool onDiag(Token_t);
-bool inCage(Token_t);
+bool inCage(Point_t);
 Move_t moveDiag(Token_t, int);
 Move_t moveHorz(Token_t, int);
 Move_t moveVert(Token_t, int);
@@ -562,7 +562,7 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
             move = moveDiag(tigerToken, random);
         }
     }
-    if ((tokens.size() -1 > 9) && TIGERMOVECOUNT >= 6) {
+    if ((tokens.size() -1 > 14) && TIGERMOVECOUNT >= 6) {
         pair<bool, Move_t> scanning = singleScan(tokens, tigerToken.location);
         pair<bool, Move_t> secondScan = doubleScan(tokens);
         if (scanning.first == true) {
@@ -572,12 +572,9 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
                 if (checkOpen(tokens, move.destination)) {
                     Point_t mir = mirror(move.destination, tigerToken.location);
                     move = takeHuman(tigerToken, tokens, mir);
-                    if (inBounds(move.destination)) {
-                        cout << "AHHHHHHHHHHHHHHHHHH" << endl;
-                    }
                     cout << "die die die" << move.destination.col << ", " << move.destination.row << endl ;
                 } else {
-                    move = moveVert(tigerToken, 1);
+                    move = pickRandom(tokens, move);
                 }
             }
         } else if (secondScan.first == true) {
@@ -587,18 +584,15 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
             move = groupCenterBias(tokens);
         }
     }
-    else if (tokens.size() - 1 < 10) {
+    else if (tokens.size() - 1 < 15) {
         move = moveToClosestHuman(tokens);
     }
     TIGERMOVECOUNT++;
-    if ( inBounds(move.destination)) {
+    if ( inBounds(move.destination) && ! isOccupied(tokens, move.destination)) {
         return move;
     }
-    else {
         move = pickRandom(tokens, move);
         return move;
-    }
-
 }
 
 bool onDiag(Token_t token){
@@ -618,9 +612,12 @@ Move_t takeHuman ( Token_t tiger, const vector<Token_t>& tokens, Point_t goal ) 
     move.destination = tiger.location;
     if ( !isOccupied(tokens, goal) ) {
         move.destination = goal;
-        return move;
+
+        if ( inBounds(move.destination)) {
+            return move;
+        }
     }
-    return move;
+    return move = pickRandom(tokens, move);
 }
 
 bool checkOpen (const vector<Token_t>& tokens, Point_t pt) {
@@ -639,10 +636,10 @@ bool checkOpen (const vector<Token_t>& tokens, Point_t pt) {
     return takeable;
 }
 
-bool inCage(Token_t token){
+bool inCage(Point_t token){
     for (const Point_t& cagePoint : CAGE_COORDINATES) {
-        if (token.location.row == cagePoint.row) {
-            if (token.location.col == cagePoint.col) {
+        if (token.row == cagePoint.row) {
+            if (token.col == cagePoint.col) {
                 return true;
             }
         }
@@ -661,7 +658,7 @@ bool isOccupied(const vector<Token_t>& tokens, Point_t point){
 
 vector<Point_t> getLegalMoveCage(const vector<Token_t>& tokens, Token_t token){
     vector<Point_t> moves = {};
-    if (inCage(token)){
+    if (inCage(token.location)){
         switch(token.location.row){
             case 0:
                 moves.push_back(Point_t{1, 5});
@@ -796,11 +793,13 @@ bool inBounds(Point_t pt){
     for (int i = 0; i < CAGE_COORDINATES.size(); i++){
         if (pt.col == CAGE_COORDINATES[i].col &&
             pt.row == CAGE_COORDINATES[i].row){
+
             return true;
         }
     }
 
     if (pt.col > 8 || pt.col < 0 || pt.row > 12 || pt.row < 4) {
+        cout << "I know this bad" << endl;
         return false;
     }
 
@@ -1014,6 +1013,7 @@ Move_t moveToClosestHuman(vector<Token_t> tokens) {
                 return move;
             }
         }
+        move = pickRandom(tokens, move);
     } else if (secondScan.first) {
         return secondScan.second;
     }
