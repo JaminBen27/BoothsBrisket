@@ -459,6 +459,7 @@ bool checkSelfSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocati
     if(p.col == tiger.location.col && p.row == tiger.location.row) {
         sac = true;
     }
+    if(tiger.lca)
     return sac;
 }
 
