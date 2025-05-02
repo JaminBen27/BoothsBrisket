@@ -25,10 +25,11 @@ static int TIGERMOVECOUNT = 1;
 static int HUMAN_PROGRESSION_ROW = 10;
 static bool ENDGAME = false;
 static vector<Move_t> SACMOVES;
-static enum DIRECTION {UP, DOWN, LEFT, RIGHT, NONE};
+enum DIRECTION {UP, DOWN, LEFT, RIGHT, NONE};
 
 //Game Phases
 //GENERIC USEFUL FUNCTIONS
+Move_t checkCageSpots(Move_t move, vector<Token_t> tokens);
 bool checkLegalMove(const vector<Token_t>& tokens, Move_t move);
 double dist(Point_t p1, Point_t p2);
 Point_t mirror(Point_t pivot, Point_t  mirroredVal);
@@ -104,16 +105,16 @@ inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens, Color_t c) {
     }
     return humanFunction(tokens);
 }
-
+/*
 //Returns a direction the tiger may jump in
 inline DIRECTION checkImmediateDanger(vector<Token_t> tokens) {
     Token_t tiger = tokens[0];
     tokens.erase(tokens.begin());
 
-    /*
-    Point_t up = {tiger.location.row - 1, tiger.location.col};
-    Point_t down = {tiger.location.row + 1, tiger.location.col};
-    */
+
+    //Point_t up = {tiger.location.row - 1, tiger.location.col};
+    //Point_t down = {tiger.location.row + 1, tiger.location.col};
+
     Point_t left = {tiger.location.row, tiger.location.col - 1};
     Point_t right = {tiger.location.row, tiger.location.col + 1};
 
@@ -147,7 +148,7 @@ Move_t protectImmediateDanger(vector<Token_t> tokens, DIRECTION d) {
     return move;
 }
 
-
+*/
 inline Move_t humanFunction(const vector<Token_t>& tokens) {
     cout << "Human is thinking" << endl;
     Move_t m;
@@ -196,9 +197,12 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
         rowVulnerabilities = updateRowVulnerabilities(tokens, tokens);
         colVulnerabilities = updateColVulnerabilities(tokens,tokens);
 
+        /*
         if (checkImmediateDanger(tokens) != NONE) {
             moveList.push(protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
         }
+        */
+
         if(rowVulnerabilities.size() > 0) {
             temp = fixRowVuln(tokens,rowVulnerabilities);
             collectMoves(moveList,temp);
