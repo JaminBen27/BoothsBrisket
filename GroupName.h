@@ -1,12 +1,10 @@
 /*TODO
- *FIX failsafe being tigers position
- *FurthestPiece is poorly designd assumes tokens are sorted
- *Protect Column and protected row could probboly be merged
- *checkColumnDanger has a quintuple nest that could be refactored
- *checkHumanAt() logic would simplify code in alot of places
- *current bug is realted to checkProtectedRow RowBulnFix is not running so all the pieces are just movning up;
- *
- **/
+ *KNOW BUGS +
+ *  selfSac isnt working for column captures
+ *  Sometimes tiger gets confused and doesnt returna move
+ *  END game crashes sometimes for humans
+ *  Tiger and humans can jump into cage from 4,5 and 3,3
+ */
 #include <vector>
 #include <cstdlib>
 #include <ctime>
@@ -81,7 +79,6 @@ int  getHalf(Point_t p);
 Move_t moveTo(Token_t t, Point_t p);
 vector<Token_t> getBoxHumans(vector<Token_t> tokens);
 vector<Move_t> getReplacementMoves(vector<Token_t> tokens);
-Move_t moveTo(Token_t t, Point_t p);
 vector<Move_t> getBoxMoves(vector<Token_t> tokens,vector<Token_t> boxTokens,Token_t tiger);
 void proccessDiagonals(vector<Move_t>& moves);
 
@@ -230,7 +227,7 @@ vector<Move_t> getBoxMoves(vector<Token_t> tokens,vector<Token_t> boxTokens,Toke
     for(Token_t t: boxTokens) {
         vector<Point_t> points = getAdjacentCageCords(t.location);
         for(Point_t p: points) {
-            bool b = inCage({BLUE,p});
+            bool b = inCage(p);
             bool legal = checkLegalMove(tokens,{t,p});
             bool capture =isSamePoint( mirror(p,tiger.location),t.location);
             bool backwards = isSamePoint(p,{4,4});
@@ -282,7 +279,7 @@ Move_t moveTo(Token_t t, Point_t p) {
     Move_t m;
     m.token = t;
     //TODO: REFACTOR: incage() should take a point
-    if(!inCage(t)) {
+    if(!inCage(t.location)) {
         if(t.location.row == p.row) {
             if(t.location.col > p.col) {
                 m.destination = {t.location.row,t.location.col-1};
@@ -542,7 +539,7 @@ void updateProgressionRow(vector<Token_t> tokens) {
     tokens.erase(tokens.begin());
     int count =0;
     Point_t key = {2,4};
-    if(HUMAN_PROGRESSION_ROW ==3 && inCage(tiger) && checkHumanAt(tokens,key)) {
+    if(HUMAN_PROGRESSION_ROW ==3 && inCage(tiger.location) && checkHumanAt(tokens,key)) {
         return;
     }
 
