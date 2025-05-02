@@ -95,7 +95,7 @@ Move_t takeHuman ( Token_t tiger, const vector<Token_t>& tokens, Point_t goal );
 bool checkOpen (const vector<Token_t>& tokens, Point_t pt);
 pair<bool, Move_t> singleScan(vector<Token_t> tokens, Point_t pos);
 pair<bool,Move_t> doubleScan(vector<Token_t> tokens);
-Move_t moveToClosestHuman(vector<Token_t> tokens);
+Move_t huntingMode(vector<Token_t> tokens);
 Move_t groupCenterBias(vector<Token_t> tokens);
 vector<Point_t> getLegalMoveCage(const vector<Token_t>& tokens, Token_t token);
 
@@ -843,7 +843,7 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
         }
     }
     else if (tokens.size() - 1 < 15) {
-        move = moveToClosestHuman(tokens);
+        move = huntingMode(tokens);
     }
     TIGERMOVECOUNT++;
     if ( inBounds(move.destination) && ! isOccupied(tokens, move.destination)) {
@@ -1058,7 +1058,6 @@ bool inBounds(Point_t pt){
     }
 
     if (pt.col > 8 || pt.col < 0 || pt.row > 12 || pt.row < 4) {
-        cout << "I know this bad" << endl;
         return false;
     }
 
@@ -1138,7 +1137,6 @@ pair<bool, Move_t> singleScan(vector<Token_t> tokens, Point_t pos){
 }
 
 pair<bool,Move_t> doubleScan(vector<Token_t> tokens){
-    //TODO: THIS LOGIC MAKES NO SENSE, AND I AM VERY TIRED, GOODNIGHT
     Token_t tigerToken = tokens[0];
     pair<bool, Move_t> movesReturn;
     pair<bool, Move_t> scanResult;
@@ -1226,7 +1224,7 @@ pair<bool,Move_t> doubleScan(vector<Token_t> tokens){
 }
 
 
-Move_t moveToClosestHuman(vector<Token_t> tokens) {
+Move_t huntingMode(vector<Token_t> tokens) {
     Token_t tigerToken = tokens[0];
     Move_t move;
     move.token = tigerToken;
@@ -1287,9 +1285,23 @@ Move_t moveToClosestHuman(vector<Token_t> tokens) {
         int rowDiff = closestHuman.location.row - tigerToken.location.row;
         int colDiff = closestHuman.location.col - tigerToken.location.col;
 
-        if (onDiag(tigerToken) && onDiag(closestHuman)) {
-            destination.row += (rowDiff > 0) ? 1 : -1;
-            destination.col += (colDiff > 0) ? 1 : -1;
+        if (onDiag(tigerToken)) {
+            Point_t potentialDiag = tigerToken.location;
+            potentialDiag.row += (rowDiff > 0) ? 1 : -1;
+            potentialDiag.col += (colDiff > 0) ? 1 : -1;
+
+            Token_t tempToken;
+            tempToken.location = potentialDiag;
+
+            if (onDiag(tempToken)) {
+                destination = potentialDiag;
+            } else {
+                if (abs(rowDiff) > abs(colDiff)) {
+                    destination.row += (rowDiff > 0) ? 1 : -1;
+                } else {
+                    destination.col += (colDiff > 0) ? 1 : -1;
+                }
+            }
         } else {
             if (abs(rowDiff) > abs(colDiff)) {
                 destination.row += (rowDiff > 0) ? 1 : -1;
