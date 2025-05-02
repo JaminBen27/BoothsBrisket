@@ -789,7 +789,6 @@ Move_t pickRandom(vector<Token_t> tokens, Move_t move) {
     return move;
 }
 inline Move_t tigerFunction(const vector<Token_t>& tokens) {
-    cout << "Tiger is thinking" << endl;
     Move_t move;
     Token_t tigerToken = tokens[0];
     move.token = tigerToken;
@@ -824,19 +823,16 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
         pair<bool, Move_t> scanning = singleScan(tokens, tigerToken.location);
         pair<bool, Move_t> secondScan = doubleScan(tokens);
         if (scanning.first == true) {
-            cout << "found target" << endl;
             move.destination = scanning.second.destination;
             if (isOccupied(tokens, move.destination)) {
                 if (checkOpen(tokens, move.destination)) {
                     Point_t mir = mirror(move.destination, tigerToken.location);
                     move = takeHuman(tigerToken, tokens, mir);
-                    cout << "die die die" << move.destination.col << ", " << move.destination.row << endl ;
                 } else {
                     move = pickRandom(tokens, move);
                 }
             }
         } else if (secondScan.first == true) {
-            cout << "Hunting" << endl;
             move.destination = secondScan.second.destination;
         } else {
             move = groupCenterBias(tokens);
@@ -847,6 +843,7 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
     }
     TIGERMOVECOUNT++;
     if ( inBounds(move.destination) && ! isOccupied(tokens, move.destination)) {
+        move = checkCageSpots(move, tokens);
         return move;
     }
         move = pickRandom(tokens, move);
@@ -1234,7 +1231,6 @@ Move_t huntingMode(vector<Token_t> tokens) {
     pair<bool, Move_t> secondScan = doubleScan(tokens);
 
     if (scanning.first) {
-        cout << "found target" << endl;
         move.destination = scanning.second.destination;
         if (isOccupied(tokens, move.destination)) {
             if (checkOpen(tokens, move.destination)) {
@@ -1525,28 +1521,24 @@ Move_t checkCageSpots(Move_t move, vector<Token_t> tokens){
     Point_t tempPoint6 = {4,5};
     if ((move.destination == tempPoint && tigerToken.location == tempPoint2) ||
         (move.destination == tempPoint2 && tigerToken.location == tempPoint)) {
-        cout << "Blocking bad move" << endl;
         move = pickRandom(tokens, move);
         move = checkCageSpots(move, tokens);
     }
 
     if ((move.destination == tempPoint3 && tigerToken.location == tempPoint4) ||
         (move.destination == tempPoint4 && tigerToken.location == tempPoint3)) {
-        cout << "Blocking bad move" << endl;
         move = pickRandom(tokens, move);
         move = checkCageSpots(move, tokens);
     }
 
     if ((move.destination == tempPoint3 && tigerToken.location == tempPoint5) ||
         (move.destination == tempPoint5 && tigerToken.location == tempPoint3)) {
-        cout << "Blocking bad move" << endl;
         move = pickRandom(tokens, move);
         move = checkCageSpots(move, tokens);
     }
 
     if ((move.destination == tempPoint && tigerToken.location == tempPoint6) ||
         (move.destination == tempPoint6 && tigerToken.location == tempPoint)) {
-        cout << "Blocking bad move" << endl;
         move = pickRandom(tokens, move);
         move = checkCageSpots(move, tokens);
     }
