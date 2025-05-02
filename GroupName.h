@@ -7,8 +7,6 @@
  */
 #include <vector>
 #include <cstdlib>
-#include <ctime>
-#include <algorithm>
 #include <list>
 
 #include "constants.h"
@@ -27,6 +25,7 @@ static int TIGERMOVECOUNT = 1;
 static int HUMAN_PROGRESSION_ROW = 10;
 static bool ENDGAME = false;
 static vector<Move_t> SACMOVES;
+static enum DIRECTION {UP, DOWN, LEFT, RIGHT, NONE};
 
 //Game Phases
 //GENERIC USEFUL FUNCTIONS
@@ -55,7 +54,7 @@ bool checkSameToken(Token_t token1, Token_t token2);
 vector<Move_t> getFurthestPieces(vector<Token_t> tokens,vector<Token_t>,vector<Token_t>);
 bool checkRowVulnerability(vector<Token_t> tokens, Token_t piece);
 bool checkColumnDanger(vector<Token_t> tokens, Token_t piece);
-bool checkImmediateDanger(vector<Token_t> tokens);
+DIRECTION checkImmediateDanger(vector<Token_t> tokens);
 
 vector<Token_t> updateColVulnerabilities(vector<Token_t> tokens, vector<Token_t>);
 vector<Token_t> updateRowVulnerabilities(vector<Token_t> tokens,vector<Token_t>);
@@ -106,6 +105,49 @@ inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens, Color_t c) {
     return humanFunction(tokens);
 }
 
+//Returns a direction the tiger may jump in
+inline DIRECTION checkImmediateDanger(vector<Token_t> tokens) {
+    Token_t tiger = tokens[0];
+    tokens.erase(tokens.begin());
+
+    /*
+    Point_t up = {tiger.location.row - 1, tiger.location.col};
+    Point_t down = {tiger.location.row + 1, tiger.location.col};
+    */
+    Point_t left = {tiger.location.row, tiger.location.col - 1};
+    Point_t right = {tiger.location.row, tiger.location.col + 1};
+
+    for (Token_t t : tokens) {
+        if (t.location == left) {
+            return LEFT;
+        }
+        if (t.location == right) {
+            return RIGHT;
+        }
+    }
+}
+
+Move_t protectImmediateDanger(vector<Token_t> tokens, DIRECTION d) {
+    Token_t tiger = tokens[0];
+    tokens.erase(tokens.begin());
+    Move_t move;
+    move.token = {BLUE, tiger.location};
+
+    switch (d) {
+        case LEFT:
+            move.token.location.col--;
+            break;
+        case RIGHT:
+            move.token.location.col++;
+            break;
+    }
+    move.destination = mirror(move.token.location, tiger.location);
+    move.token.location = move.destination;
+    move.token.location.row++;
+    return move;
+}
+
+
 inline Move_t humanFunction(const vector<Token_t>& tokens) {
     cout << "Human is thinking" << endl;
     Move_t m;
@@ -144,11 +186,8 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
             badMove = checkBadMove(tokens,m);
         }
         if (badMove) {
-            m= tempo(tokens);
-            //return pickRandom(tokens);
-            cout << " breakpoin";
+            return pickRandom(tokens);
         }
-        cout << "BREAKPOINT LINE" << endl;
     }
     else if (HUMAN_PROGRESSION_ROW>0) {
         frontLine = getFrontRow(tokens);
@@ -157,6 +196,9 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
         rowVulnerabilities = updateRowVulnerabilities(tokens, tokens);
         colVulnerabilities = updateColVulnerabilities(tokens,tokens);
 
+        if (checkImmediateDanger(tokens) != NONE) {
+            moveList.push(protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
+        }
         if(rowVulnerabilities.size() > 0) {
             temp = fixRowVuln(tokens,rowVulnerabilities);
             collectMoves(moveList,temp);
@@ -181,12 +223,10 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
             return pickRandom(tokens);
         }
     }
-
-
-    if(HUMAN_PROGRESSION_ROW ==3) {
-        cout << "DEBUG";
+    if (checkLegalMove(tokens, m)) {
+        return m;
     }
-    return m;
+    return pickRandom(tokens);
 }
 void proccessDiagonals(vector<Move_t>& moves) {
     Point_t goodDiags[] = {{2,6},{2,2},{0,4}};
@@ -720,7 +760,9 @@ Move_t pickRandom (const vector<Token_t>& tokens) {
         }
     } while (checkLegalMove(tokens, move) == false);
     return move;
-}Move_t pickRandom(vector<Token_t> tokens, Move_t move) {
+}
+
+Move_t pickRandom(vector<Token_t> tokens, Move_t move) {
     move.destination = move.token.location;
     do {
         if (rand() % 2 == 0) {
@@ -1449,6 +1491,49 @@ Move_t groupCenterBias(vector<Token_t> tokens) {
     if (!inBounds(move.destination) || isOccupied(tokens, move.destination) ||
         dist(tigerToken.location, move.destination) > sqrt(2) + 0.0001) {
         return pickRandom(tokens, move);
+    }
+
+    move = checkCageSpots(move, tokens);
+
+    return move;
+}
+
+Move_t checkCageSpots(Move_t move, vector<Token_t> tokens){
+    // A quick fix for some known bad moves near where the normal field
+    // And cage intersect.
+    Token_t tigerToken = tokens[0];
+    Point_t tempPoint = {3,5};
+    Point_t tempPoint2 = {5,5};
+    Point_t tempPoint3 = {3,3};
+    Point_t tempPoint4 = {5,3};
+    Point_t tempPoint5 = {4,3};
+    Point_t tempPoint6 = {4,5};
+    if ((move.destination == tempPoint && tigerToken.location == tempPoint2) ||
+        (move.destination == tempPoint2 && tigerToken.location == tempPoint)) {
+        cout << "Blocking bad move" << endl;
+        move = pickRandom(tokens, move);
+        move = checkCageSpots(move, tokens);
+    }
+
+    if ((move.destination == tempPoint3 && tigerToken.location == tempPoint4) ||
+        (move.destination == tempPoint4 && tigerToken.location == tempPoint3)) {
+        cout << "Blocking bad move" << endl;
+        move = pickRandom(tokens, move);
+        move = checkCageSpots(move, tokens);
+    }
+
+    if ((move.destination == tempPoint3 && tigerToken.location == tempPoint5) ||
+        (move.destination == tempPoint5 && tigerToken.location == tempPoint3)) {
+        cout << "Blocking bad move" << endl;
+        move = pickRandom(tokens, move);
+        move = checkCageSpots(move, tokens);
+    }
+
+    if ((move.destination == tempPoint && tigerToken.location == tempPoint6) ||
+        (move.destination == tempPoint6 && tigerToken.location == tempPoint)) {
+        cout << "Blocking bad move" << endl;
+        move = pickRandom(tokens, move);
+        move = checkCageSpots(move, tokens);
     }
 
     return move;
