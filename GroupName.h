@@ -201,11 +201,10 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
         colVulnerabilities = updateColVulnerabilities(tokens,tokens);
 
 
-        if (checkImmediateDanger(tokens) != NONE) {
-            moveList.push(protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
-        }
-        */
-
+        // if (checkImmediateDanger(tokens) != NONE) {
+        //     moveList.push(protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
+        // }
+        //
         // if (checkImmediateDanger(tokens) != NONE) {
         //     moveList.push(protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
         // }
@@ -226,6 +225,12 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
         bool badMove = true;
         while(badMove && moveList.size() > 0) {
             m = moveList.front();
+            if(isSamePoint(m.destination,{10,3})) {
+                cout << "debig";
+            }
+            if(isSamePoint(m.destination,{10,4})) {
+                cout << "debig";
+            }
             moveList.pop();
             badMove = checkBadMove(tokens,m);
         }
@@ -512,10 +517,15 @@ bool checkSelfSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocati
     if(onDiag(tiger) && onDiag({BLUE,newLocation})) {
 
     }
-    if(checkHumanAt(tokens,mirror(newLocation,tiger.location))) {
+    bool mir = checkHumanAt(tokens,mirror(newLocation,tiger.location));
+    double d = dist(newLocation,tiger.location) == 1;
+    if(!mir && d == 1) {
         if(tiger.location.row == newLocation.row) {
             sac = true;
         }
+
+    }
+    if(!mir && d == sqrt(2)) {
         if(onDiag(tiger) && onDiag({BLUE,newLocation})) {
             sac = true;
         }
