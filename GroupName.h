@@ -77,7 +77,7 @@ vector<Token_t> getFrontRow(vector<Token_t>);
 vector<Token_t> getMiddleRow(vector<Token_t>);
 vector<Token_t> getBackRow(vector<Token_t>);
 int  getHalf(Point_t p);
-Move_t protectImmediateDanger(vector<Token_t> tokens, DIRECTION d);
+vector<Move_t> protectImmediateDanger(vector<Token_t> tokens, DIRECTION d);
 inline DIRECTION checkImmediateDanger(vector<Token_t> tokens);
 //HUMAN END GAME FUNCTIONS
 Move_t moveTo(Token_t t, Point_t p);
@@ -106,7 +106,7 @@ vector<Point_t> getLegalMoveCage(const vector<Token_t>& tokens, Token_t token);
 Move_t checkCageSpots(Move_t move, vector<Token_t> tokens);
 
 inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens, Color_t c) {
-    //srand(1);
+    srand(1);
     if (c == RED) {
         return tigerFunction(tokens);
     }
@@ -152,7 +152,7 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
             printMove(m);
         }
         if (badMove) {
-            return pickRandom(tokens);
+            return tempo(tokens);
         }
         if (checkLegalMove(tokens, m)) {
             return m;
@@ -165,16 +165,19 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
         frontLine = getFrontRow(tokens);
         midLine = getMiddleRow(tokens);
         backLine = getBackRow(tokens);
-        rowVulnerabilities = updateRowVulnerabilities(tokens, tokens);
-        colVulnerabilities = updateColVulnerabilities(tokens,tokens);
+        rowVulnerabilities = updateRowVulnerabilities(tokens, frontLine);
+        colVulnerabilities = updateColVulnerabilities(tokens,frontLine);
 
 
         if (checkImmediateDanger(tokens) != NONE) {
-            moveList.push(protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
+            temp = (protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
+            collectMoves(moveList,temp);
+
         }
 
         if (checkImmediateDanger(tokens) != NONE) {
-            moveList.push(protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
+            temp = (protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
+            collectMoves(moveList,temp);
         }
         if(rowVulnerabilities.size() > 0) {
             temp = fixRowVuln(tokens,rowVulnerabilities);
@@ -205,7 +208,7 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
             badMove = checkBadMove(tokens,m);
         }
         if (badMove) {
-            m =  pickRandom(tokens);
+            m =  tempo(tokens);
         }
     }
     if (checkLegalMove(tokens, m)) {
@@ -245,8 +248,9 @@ inline DIRECTION checkImmediateDanger(vector<Token_t> tokens) {
     return NONE;
 }
 
-Move_t protectImmediateDanger(vector<Token_t> tokens, DIRECTION d) {
+vector<Move_t> protectImmediateDanger(vector<Token_t> tokens, DIRECTION d) {
     Token_t tiger = tokens[0];
+    vector<Move_t> moves;
     Move_t move;
     move.token = {BLUE, tiger.location};
 
@@ -263,9 +267,9 @@ Move_t protectImmediateDanger(vector<Token_t> tokens, DIRECTION d) {
     move.token.location.row++;
 
     if (checkLegalMove(tokens, move)) {
-        return move;
+        moves.push_back(move);
     }
-    return pickRandom(tokens);
+    return moves;
 }
 int getAmmo(vector<Token_t> tokens) {
     Point_t ammoSpots[] = { {4,5}, {4,3}, {5,4} };
@@ -471,12 +475,15 @@ vector<Token_t> updateColVulnerabilities(vector<Token_t> tokens,vector<Token_t> 
     }
     return colVulns;
 }
+
 vector<Move_t> fixRowVuln(vector<Token_t> tokens, vector<Token_t> rowVulns) {
     vector<Move_t> moves;
     Move_t m;
+    //Check every vulnerable token
     for(Token_t t: rowVulns) {
         Point_t p = t.location;
         p.row +=2;
+        //check 2 spaces behind vulnerable piece and check if there is a human -> move it up if there is
         if(checkHumanAt(tokens,p)) {
             Token_t protectionPiece = getHumanAt(tokens,p);
             m.token = protectionPiece;
@@ -488,6 +495,7 @@ vector<Move_t> fixRowVuln(vector<Token_t> tokens, vector<Token_t> rowVulns) {
     return moves;
 }
 vector<Token_t> getFrontRow(vector<Token_t> tokens) {
+    tokens.erase(tokens.begin()+1);
     vector<Token_t> row;
     for(Token_t t: tokens) {
         if(t.location.row == HUMAN_PROGRESSION_ROW) {
@@ -516,6 +524,7 @@ vector<Token_t> getBackRow(vector<Token_t> tokens) {
 }
 vector<Token_t> updateRowVulnerabilities(vector<Token_t> tokens, vector<Token_t> frontRow) {
     vector<Token_t> rowVulns;
+    //Check every token in the front row (excluding tiger)
     for(Token_t t: frontRow) {
         if (t.color == BLUE) {
             Point_t front = {t.location.row - 1, t.location.col};
@@ -645,6 +654,7 @@ void updateProgressionRow(vector<Token_t> tokens) {
     Token_t tiger = tokens[0];
     tokens.erase(tokens.begin());
     int count =0;
+    int secondCount =0;
     Point_t key = {2,4};
     if(HUMAN_PROGRESSION_ROW ==3 && inCage(tiger.location) && checkHumanAt(tokens,key)) {
         return;
@@ -655,7 +665,12 @@ void updateProgressionRow(vector<Token_t> tokens) {
             count++;
         }
     }
-    if(count ==9) {
+    for(Token_t t: tokens) {
+        if(t.location.row == HUMAN_PROGRESSION_ROW+1) {
+            secondCount++;
+        }
+    }
+    if(count ==9 && secondCount ==9) {
         HUMAN_PROGRESSION_ROW--;
         cout << "---------------------------" << endl;
         cout << "---------------------------" << endl;
@@ -795,6 +810,7 @@ bool checkLegalMove(const vector<Token_t>& tokens, Move_t move) {
     return true;
 }
 
+//HUMANS RANDOM
 Move_t pickRandom (const vector<Token_t>& tokens) {
     Move_t move;
     do {
@@ -820,7 +836,7 @@ Move_t pickRandom (const vector<Token_t>& tokens) {
     } while (checkLegalMove(tokens, move) == false);
     return move;
 }
-
+//TIGER RANDOM
 Move_t pickRandom(vector<Token_t> tokens, Move_t move) {
     move.destination = move.token.location;
     do {
@@ -852,58 +868,58 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
 
     // //BENS TESTING ALG
     //
-     vector<Point_t> p;
-    p = getLegalMoveCage(tokens,tigerToken);
-    random = random%p.size();
-    move.destination = p[random];
-    return move;
+    //  vector<Point_t> p;
+    // p = getLegalMoveCage(tokens,tigerToken);
+    // random = random%p.size();
+    // move.destination = p[random];
+    // return move;
     //Temporary fix for picking left or right randomly
-    // if (random % 2 == 0){
-    //     random = 1;
-    // } else {
-    //     random = 4;
-    // }
-    // if (TIGERMOVECOUNT <= 5) {
-    //
-    //     if (TIGERMOVECOUNT == 1) {
-    //         move = moveDiag(tigerToken, 4);
-    //     }
-    //     else if (TIGERMOVECOUNT == 2){
-    //         move = moveDiag(tigerToken, 1);
-    //     }
-    //     else if (TIGERMOVECOUNT >= 3 && TIGERMOVECOUNT <= 5) {
-    //         move = moveDiag(tigerToken, random);
-    //     }
-    // }
-    // if ((tokens.size() -1 > 14) && TIGERMOVECOUNT >= 6) {
-    //     pair<bool, Move_t> scanning = singleScan(tokens, tigerToken.location);
-    //     pair<bool, Move_t> secondScan = doubleScan(tokens);
-    //     if (scanning.first == true) {
-    //         move.destination = scanning.second.destination;
-    //         if (isOccupied(tokens, move.destination)) {
-    //             if (checkOpen(tokens, move.destination)) {
-    //                 Point_t mir = mirror(move.destination, tigerToken.location);
-    //                 move = takeHuman(tigerToken, tokens, mir);
-    //             } else {
-    //                 move = pickRandom(tokens, move);
-    //             }
-    //         }
-    //     } else if (secondScan.first == true) {
-    //         move.destination = secondScan.second.destination;
-    //     } else {
-    //         move = groupCenterBias(tokens);
-    //     }
-    // }
-    // else if (tokens.size() - 1 < 15) {
-    //     move = huntingMode(tokens);
-    // }
-    // TIGERMOVECOUNT++;
-    // if ( inBounds(move.destination) && ! isOccupied(tokens, move.destination)) {
-    //     move = checkCageSpots(move, tokens);
-    //     return move;
-    // }
-    //     move = pickRandom(tokens, move);
-    //     return move;
+     if (random % 2 == 0){
+         random = 1;
+     } else {
+         random = 4;
+     }
+     if (TIGERMOVECOUNT <= 5) {
+
+         if (TIGERMOVECOUNT == 1) {
+             move = moveDiag(tigerToken, 4);
+         }
+         else if (TIGERMOVECOUNT == 2){
+             move = moveDiag(tigerToken, 1);
+         }
+         else if (TIGERMOVECOUNT >= 3 && TIGERMOVECOUNT <= 5) {
+             move = moveDiag(tigerToken, random);
+         }
+     }
+     if ((tokens.size() -1 > 14) && TIGERMOVECOUNT >= 6) {
+         pair<bool, Move_t> scanning = singleScan(tokens, tigerToken.location);
+         pair<bool, Move_t> secondScan = doubleScan(tokens);
+         if (scanning.first == true) {
+             move.destination = scanning.second.destination;
+             if (isOccupied(tokens, move.destination)) {
+                 if (checkOpen(tokens, move.destination)) {
+                     Point_t mir = mirror(move.destination, tigerToken.location);
+                     move = takeHuman(tigerToken, tokens, mir);
+                 } else {
+                     move = pickRandom(tokens, move);
+                 }
+             }
+         } else if (secondScan.first == true) {
+             move.destination = secondScan.second.destination;
+         } else {
+             move = groupCenterBias(tokens);
+         }
+     }
+     else if (tokens.size() - 1 < 15) {
+         move = huntingMode(tokens);
+     }
+     TIGERMOVECOUNT++;
+     if ( inBounds(move.destination) && ! isOccupied(tokens, move.destination)) {
+         move = checkCageSpots(move, tokens);
+         return move;
+     }
+         move = pickRandom(tokens, move);
+         return move;
 }
 
 bool onDiag(Token_t token){
