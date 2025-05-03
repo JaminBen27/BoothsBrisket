@@ -22,6 +22,8 @@ const vector<Point_t> CAGE_COORDINATES = {
 };
 
 static int TIGERMOVECOUNT = 1;
+static bool shimmy = false;
+static bool reverseShimmy = false;
 static int HUMAN_PROGRESSION_ROW = 10;
 static bool ENDGAME = false;
 static vector<Move_t> SACMOVES;
@@ -44,10 +46,12 @@ bool inBounds(Point_t pt);
 bool isSamePoint(Point_t p1, Point_t p2);
 void printPoint(Point_t p);
 void printMove(Move_t m);
+bool isTigerRight(Token_t tiger);
 //------------------------------------------------------------------
 //------------------------------------------------------------------
 //------------------------------------------------------------------
 //HUMAN SPECIFIC FUNTIONS
+vector<Move_t> getRowOneMoves(vector<Token_t> frontRow, Token_t tiger);
 Move_t pickRandom (const vector<Token_t>& tokens);
 Move_t humanFunction(const vector<Token_t>& tokens );
 bool checkAdj(Token_t tiger, Point_t p);
@@ -80,6 +84,7 @@ int  getHalf(Point_t p);
 vector<Move_t> protectImmediateDanger(vector<Token_t> tokens, DIRECTION d);
 inline DIRECTION checkImmediateDanger(vector<Token_t> tokens);
 //HUMAN END GAME FUNCTIONS
+Move_t getEndGameMove(vector<Token_t> tokens, queue<Move_t>& moveList);
 Move_t moveTo(Token_t t, Point_t p);
 vector<Token_t> getBoxHumans(vector<Token_t> tokens);
 vector<Move_t> getReplacementMoves(vector<Token_t> tokens);
@@ -133,33 +138,7 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
 
     updateProgressionRow(tokens);
     if(HUMAN_PROGRESSION_ROW == 3) {
-        ENDGAME = true;
-        //PHASE 1
-        vector<Token_t> boxHumans;
-        boxHumans = getBoxHumans(tokens);
-        if(getAmmo(tokens) <=1 || !checkHumanAt(tokens,{4,4})) {
-            temp = getReplacementMoves(tokens);
-            collectMoves(moveList,temp);
-        }
-        temp = getBoxMoves(tokens,boxHumans,tokens[0]);
-        collectMoves(moveList,temp);
-
-        bool badMove = true;
-        while(badMove && !moveList.empty()) {
-            m = moveList.front();
-            moveList.pop();
-            badMove = checkBadMove(tokens,m);
-            printMove(m);
-        }
-        if (badMove) {
-            return tempo(tokens);
-        }
-        if (checkLegalMove(tokens, m)) {
-            return m;
-        }
-        else {
-            cout << "BAD THING";
-        }
+         m = getEndGameMove(tokens,moveList);
     }
     else if (HUMAN_PROGRESSION_ROW>0) {
         frontLine = getFrontRow(tokens);
@@ -167,8 +146,13 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
         backLine = getBackRow(tokens);
         rowVulnerabilities = updateRowVulnerabilities(tokens, frontLine);
         colVulnerabilities = updateColVulnerabilities(tokens,frontLine);
-
-
+        if(HUMAN_PROGRESSION_ROW == 10) {
+            temp = getRowOneMoves(midLine,tokens[0]);
+            collectMoves(moveList,temp);
+        }
+        if(shimmy) {
+            return m;
+        }
         if (checkImmediateDanger(tokens) != NONE) {
             temp = (protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
             collectMoves(moveList,temp);
@@ -215,6 +199,56 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
         return m;
     }
     return pickRandom(tokens);
+}
+vector<Move_t> getRowOneMoves(vector<Token_t> midRow, Token_t tiger) {
+    bool right = isTigerRight(tiger);
+    vector<Move_t> moves;
+    Move_t m;
+    for(Token_t t: midRow) {
+        if(t.location.col >=6 && right || t.location.col <=2 && !right) {
+            m.token = t;
+            m.destination = t.location;
+            m.destination.row --;
+            moves.push_back(m);
+        }
+    }
+    return moves;
+
+}
+Move_t getEndGameMove(vector<Token_t> tokens, queue<Move_t>& moveList) {
+    Move_t m;
+    ENDGAME = true;
+    //PHASE 1
+    vector<Token_t> boxHumans;
+    vector<Move_t> temp;
+    boxHumans = getBoxHumans(tokens);
+    if(getAmmo(tokens) <=1 || !checkHumanAt(tokens,{4,4})) {
+        temp = getReplacementMoves(tokens);
+        collectMoves(moveList,temp);
+    }
+    temp = getBoxMoves(tokens,boxHumans,tokens[0]);
+    collectMoves(moveList,temp);
+
+    bool badMove = true;
+    while(badMove && !moveList.empty()) {
+        m = moveList.front();
+        moveList.pop();
+        badMove = checkBadMove(tokens,m);
+        printMove(m);
+    }
+    if (badMove) {
+        shimmy = true;
+        return tempo(tokens);
+    }
+    if (checkLegalMove(tokens, m)) {
+        return m;
+    }
+    else {
+        cout << "BAD THING";
+    }
+}
+bool isTigerRight(Token_t tiger) {
+    return tiger.location.col >= 4;
 }
 void printMove(Move_t m) {
     printPoint(m.token.location);
