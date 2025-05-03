@@ -51,6 +51,7 @@ bool isTigerRight(Token_t tiger);
 //------------------------------------------------------------------
 //------------------------------------------------------------------
 //HUMAN SPECIFIC FUNTIONS
+Move_t getPhaseOneMove(vector<Token_t> tokens);
 vector<Move_t> getRowOneMoves(vector<Token_t> frontRow, Token_t tiger);
 Move_t pickRandom (const vector<Token_t>& tokens);
 Move_t humanFunction(const vector<Token_t>& tokens );
@@ -121,6 +122,24 @@ inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens, Color_t c) {
 inline Move_t humanFunction(const vector<Token_t>& tokens) {
     cout << "Human is thinking" << endl;
     Move_t m;
+
+
+    queue<Move_t> moveList;
+
+    updateProgressionRow(tokens);
+    if(HUMAN_PROGRESSION_ROW == 3) {
+         m = getEndGameMove(tokens,moveList);
+    }
+    else if (HUMAN_PROGRESSION_ROW>0) {
+        m =getPhaseOneMove(tokens);
+    }
+    if (checkLegalMove(tokens, m)) {
+        return m;
+    }
+    return pickRandom(tokens);
+}
+Move_t getPhaseOneMove(vector<Token_t> tokens) {
+    Move_t m;
     Token_t token;
     bool earlyGame;          //First Half of Board
     bool midGamer;           //Second Half of Board
@@ -135,70 +154,65 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
 
     queue<Move_t> moveList;
     vector<Move_t> temp;
-
-    updateProgressionRow(tokens);
-    if(HUMAN_PROGRESSION_ROW == 3) {
-         m = getEndGameMove(tokens,moveList);
-    }
-    else if (HUMAN_PROGRESSION_ROW>0) {
-        frontLine = getFrontRow(tokens);
-        midLine = getMiddleRow(tokens);
-        backLine = getBackRow(tokens);
-        rowVulnerabilities = updateRowVulnerabilities(tokens, frontLine);
-        colVulnerabilities = updateColVulnerabilities(tokens,frontLine);
-        if(HUMAN_PROGRESSION_ROW == 10) {
-            temp = getRowOneMoves(midLine,tokens[0]);
-            collectMoves(moveList,temp);
-        }
-        if(shimmy) {
-            return m;
-        }
-        if (checkImmediateDanger(tokens) != NONE) {
-            temp = (protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
-            collectMoves(moveList,temp);
-
-        }
-
-        if (checkImmediateDanger(tokens) != NONE) {
-            temp = (protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
-            collectMoves(moveList,temp);
-        }
-        if(rowVulnerabilities.size() > 0) {
-            temp = fixRowVuln(tokens,rowVulnerabilities);
-            collectMoves(moveList,temp);
-        }
-        if(colVulnerabilities.size() > 0) {
-            temp = fixColVuln(tokens,colVulnerabilities);
-            collectMoves(moveList,temp);
-        }
-
-        // if (frontLine.size() < 3) {
-        //     temp = takeDiag(tokens);
-        //     collectMoves(moveList,temp);
-        // }
-
-        temp = getFurthestPieces(tokens,midLine,backLine);
+    frontLine = getFrontRow(tokens);
+    midLine = getMiddleRow(tokens);
+    backLine = getBackRow(tokens);
+    rowVulnerabilities = updateRowVulnerabilities(tokens, frontLine);
+    colVulnerabilities = updateColVulnerabilities(tokens,frontLine);
+    //ROW 1 AVOID IMEDIATE DEATH
+    if(HUMAN_PROGRESSION_ROW == 10) {
+        temp = getRowOneMoves(midLine,tokens[0]);
         collectMoves(moveList,temp);
-        bool badMove = true;
-        while(badMove && moveList.size() > 0) {
-            m = moveList.front();
-            if(isSamePoint(m.destination,{10,3})) {
-                cout << "debig";
-            }
-            if(isSamePoint(m.destination,{10,4})) {
-                cout << "debig";
-            }
-            moveList.pop();
-            badMove = checkBadMove(tokens,m);
-        }
-        if (badMove) {
-            m =  tempo(tokens);
-        }
     }
-    if (checkLegalMove(tokens, m)) {
+    if(shimmy) {
         return m;
     }
-    return pickRandom(tokens);
+    if (checkImmediateDanger(tokens) != NONE) {
+        temp = (protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
+        collectMoves(moveList,temp);
+
+    }
+
+    if (checkImmediateDanger(tokens) != NONE) {
+        temp = (protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
+        collectMoves(moveList,temp);
+    }
+    if(!rowVulnerabilities.empty()) {
+        temp = fixRowVuln(tokens,rowVulnerabilities);
+        collectMoves(moveList,temp);
+    }
+    if(!colVulnerabilities.empty()) {
+        temp = fixColVuln(tokens,colVulnerabilities);
+        collectMoves(moveList,temp);
+    }
+
+    // if (frontLine.size() < 3) {
+    //     temp = takeDiag(tokens);
+    //     collectMoves(moveList,temp);
+    // }
+
+    temp = getFurthestPieces(tokens,midLine,backLine);
+    collectMoves(moveList,temp);
+    bool badMove = true;
+    while(badMove && moveList.size() > 0) {
+        m = moveList.front();
+        if(isSamePoint(m.destination,{10,3})) {
+            cout << "debig";
+        }
+        if(isSamePoint(m.destination,{10,4})) {
+            cout << "debig";
+        }
+        moveList.pop();
+        badMove = checkBadMove(tokens,m);
+    }
+    if (badMove) {
+        m =  tempo(tokens);
+    }
+    return m;
+
+}
+vector<Move_t> getRowTwoHardCode(vector<Token_t> tokens) {
+    vector<Move_t> moves;
 }
 vector<Move_t> getRowOneMoves(vector<Token_t> midRow, Token_t tiger) {
     bool right = isTigerRight(tiger);
