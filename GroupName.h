@@ -228,7 +228,7 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
             badMove = checkBadMove(tokens,m);
         }
         if (badMove) {
-            return pickRandom(tokens);
+            m=  pickRandom(tokens);
         }
     }
     if (checkLegalMove(tokens, m)) {
