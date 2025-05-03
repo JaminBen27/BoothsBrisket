@@ -410,7 +410,7 @@ Move_t tempo(vector<Token_t> tokens) {
 }
 Token_t getAbsFurthest(vector<Token_t> tokens) {
     Token_t tiger = tokens.at(0);
-    tokens.erase(tokens.begin()+1);
+    tokens.erase(tokens.begin());
     Token_t maxDist = tiger;
     for(Token_t t: tokens) {
         if(dist(t.location,tiger.location) > dist(maxDist.location,tiger.location)) {
@@ -495,7 +495,7 @@ vector<Move_t> fixRowVuln(vector<Token_t> tokens, vector<Token_t> rowVulns) {
     return moves;
 }
 vector<Token_t> getFrontRow(vector<Token_t> tokens) {
-    tokens.erase(tokens.begin()+1);
+    tokens.erase(tokens.begin());
     vector<Token_t> row;
     for(Token_t t: tokens) {
         if(t.location.row == HUMAN_PROGRESSION_ROW) {
@@ -526,13 +526,11 @@ vector<Token_t> updateRowVulnerabilities(vector<Token_t> tokens, vector<Token_t>
     vector<Token_t> rowVulns;
     //Check every token in the front row (excluding tiger)
     for(Token_t t: frontRow) {
-        if (t.color == BLUE) {
             Point_t front = {t.location.row - 1, t.location.col};
             Point_t back = {t.location.row + 1, t.location.col};
             if(!checkHumanAt(tokens,front) && !checkHumanAt(tokens,back)) {
                 rowVulns.push_back(t);
             }
-        }
     }
     return rowVulns;
 }
@@ -553,7 +551,7 @@ bool checkBadMove(vector<Token_t> tokens, Move_t m) {
 // Returns true if the move results in self sacrifice
 bool checkSelfSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocation) {
     Token_t tiger = tokens[0];
-    tokens.erase(tokens.begin()+1);
+    tokens.erase(tokens.begin());
     bool sac = false;
     Point_t p = mirror(newLocation, human.location);
     if(p.col == tiger.location.col && p.row == tiger.location.row) {
