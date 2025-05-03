@@ -98,6 +98,7 @@ pair<bool,Move_t> doubleScan(vector<Token_t> tokens);
 Move_t huntingMode(vector<Token_t> tokens);
 Move_t groupCenterBias(vector<Token_t> tokens);
 vector<Point_t> getLegalMoveCage(const vector<Token_t>& tokens, Token_t token);
+Move_t checkCageSpots(Move_t move, vector<Token_t> tokens);
 
 inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens, Color_t c) {
     if (c == RED) {
@@ -201,9 +202,13 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
         colVulnerabilities = updateColVulnerabilities(tokens,tokens);
 
 
-        if (checkImmediateDanger(tokens) != NONE) {
-            moveList.push(protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
-        }
+        // if (checkImmediateDanger(tokens) != NONE) {
+        //     moveList.push(protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
+        // }
+        //
+        // if (checkImmediateDanger(tokens) != NONE) {
+        //     moveList.push(protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
+        // }
         if(rowVulnerabilities.size() > 0) {
             temp = fixRowVuln(tokens,rowVulnerabilities);
             collectMoves(moveList,temp);
@@ -221,11 +226,17 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
         bool badMove = true;
         while(badMove && moveList.size() > 0) {
             m = moveList.front();
+            if(isSamePoint(m.destination,{10,3})) {
+                cout << "debig";
+            }
+            if(isSamePoint(m.destination,{10,4})) {
+                cout << "debig";
+            }
             moveList.pop();
             badMove = checkBadMove(tokens,m);
         }
         if (badMove) {
-            return pickRandom(tokens);
+            m=  pickRandom(tokens);
         }
     }
     if (checkLegalMove(tokens, m)) {
@@ -503,6 +514,22 @@ bool checkSelfSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocati
     Point_t p = mirror(newLocation, human.location);
     if(p.col == tiger.location.col && p.row == tiger.location.row) {
         sac = true;
+    }
+    if(onDiag(tiger) && onDiag({BLUE,newLocation})) {
+
+    }
+    bool mir = checkHumanAt(tokens,mirror(newLocation,tiger.location));
+    double d = dist(newLocation,tiger.location) == 1;
+    if(!mir && d == 1) {
+        if(tiger.location.row == newLocation.row) {
+            sac = true;
+        }
+
+    }
+    if(!mir && d == sqrt(2)) {
+        if(onDiag(tiger) && onDiag({BLUE,newLocation})) {
+            sac = true;
+        }
     }
     return sac;
 }
