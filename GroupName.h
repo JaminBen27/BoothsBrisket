@@ -1,6 +1,6 @@
 /*TODO
  *KNOW BUGS +
- *  selfSac isnt working for column captures
+ *  DONE selfSac isnt working for column captures
  *  Sometimes tiger gets confused and doesnt returna move
  *  END game crashes sometimes for humans
  *  Tiger and humans can jump into cage from 4,5 and 3,3
