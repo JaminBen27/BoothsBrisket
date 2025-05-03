@@ -202,13 +202,13 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
         colVulnerabilities = updateColVulnerabilities(tokens,tokens);
 
 
-        // if (checkImmediateDanger(tokens) != NONE) {
-        //     moveList.push(protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
-        // }
-        //
-        // if (checkImmediateDanger(tokens) != NONE) {
-        //     moveList.push(protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
-        // }
+        if (checkImmediateDanger(tokens) != NONE) {
+            moveList.push(protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
+        }
+
+        if (checkImmediateDanger(tokens) != NONE) {
+            moveList.push(protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
+        }
         if(rowVulnerabilities.size() > 0) {
             temp = fixRowVuln(tokens,rowVulnerabilities);
             collectMoves(moveList,temp);
@@ -217,10 +217,12 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
             temp = fixColVuln(tokens,colVulnerabilities);
             collectMoves(moveList,temp);
         }
+
         // if (frontLine.size() < 3) {
         //     temp = takeDiag(tokens);
         //     collectMoves(moveList,temp);
         // }
+
         temp = getFurthestPieces(tokens,midLine,backLine);
         collectMoves(moveList,temp);
         bool badMove = true;
@@ -236,7 +238,7 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
             badMove = checkBadMove(tokens,m);
         }
         if (badMove) {
-            m=  pickRandom(tokens);
+            m =  pickRandom(tokens);
         }
     }
     if (checkLegalMove(tokens, m)) {
@@ -635,12 +637,12 @@ void updateProgressionRow(vector<Token_t> tokens) {
 //This needs to go through
 vector<Move_t> getFurthestPieces(vector<Token_t> tokens,vector<Token_t> midRow,vector<Token_t> backRow ) {
     Token_t tiger = tokens[0];
-    Token_t furthestPiece = tiger;
     Move_t m;
     vector<Token_t> canadites;
     vector<Move_t> moves;
 
     tokens.erase(tokens.begin());
+
 
     for(Token_t t: midRow) {
         Point_t p = t.location;
@@ -649,38 +651,24 @@ vector<Move_t> getFurthestPieces(vector<Token_t> tokens,vector<Token_t> midRow,v
             canadites.push_back(t);
         }
     }
-    //5/2/25 UUH DOES THIS WORK? THESE COMMENTS SCARE ME
-    //canadites = sortDistanceFromTiger(canadites,tiger);
-    //TODO GET FURTHEST CALCULATOR
-    //SKIPPED FOR NOW FOR TIME SAKE
-    for(Token_t t : canadites) {
-        m.token = t;
-        m.destination = t.location;
-        m.destination.row = m.destination.row-1;
-        moves.push_back(m);
+
+    Move_t move;
+    double maxDist = 0;
+    for (Token_t t: canadites) {
+        if (dist(tiger.location, t.location) > maxDist) {
+            maxDist = dist(tiger.location, t.location);
+            move.token = t;
+        }
     }
+    move.destination = move.token.location;
+    move.destination.row--;
+
+    moves.push_back(move);
+
     return moves;
 }
-vector<Token_t> sortDistanceFromTiger(vector<Token_t> tokens, Token_t tiger) {
-    vector<Token_t> list;
-    while(tokens.size() >0) {
-        int index;
-        Token_t maxDist = tiger;
-        for(int i=1; i < tokens.size(); i++) {
-            if(dist(tokens.at(i).location, tiger.location) > dist(maxDist.location,tiger.location)) {
-                maxDist = tokens.at(i);
-                index = i;
-            }
-        }
-        list.push_back(maxDist);
-        if (tokens.size() > 1) {
-            tokens.erase(tokens.begin()+index);
-        } else {
-            tokens.erase(tokens.begin());
-        }
-    }
-    return list;
-}
+
+
 double dist(Point_t p1, Point_t p2) {
     return sqrt(pow(p1.row - p2.row,2) + pow(p1.col - p2.col,2));
 }
@@ -719,7 +707,7 @@ Point_t mirror(Point_t pivot, Point_t  mirroredVal) {
 
 bool checkHumanAt(vector<Token_t> tokens, Point_t  p) {
     for(Token_t t: tokens) {
-        if(t.location.col == p.col && t.location.row == p.row) {
+        if (t.location.col == p.col && t.location.row == p.row) {
             return true;
         }
     }
