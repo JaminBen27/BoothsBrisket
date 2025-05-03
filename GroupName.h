@@ -126,6 +126,7 @@ inline DIRECTION checkImmediateDanger(vector<Token_t> tokens) {
             return RIGHT;
         }
     }
+    return NONE;
 }
 
 Move_t protectImmediateDanger(vector<Token_t> tokens, DIRECTION d) {
@@ -211,10 +212,10 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
             temp = fixColVuln(tokens,colVulnerabilities);
             collectMoves(moveList,temp);
         }
-        if (frontLine.size() < 3) {
-            temp = takeDiag(tokens);
-            collectMoves(moveList,temp);
-        }
+        // if (frontLine.size() < 3) {
+        //     temp = takeDiag(tokens);
+        //     collectMoves(moveList,temp);
+        // }
         temp = getFurthestPieces(tokens,midLine,backLine);
         collectMoves(moveList,temp);
         bool badMove = true;
