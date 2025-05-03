@@ -106,7 +106,7 @@ inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens, Color_t c) {
     }
     return humanFunction(tokens);
 }
-/*
+
 //Returns a direction the tiger may jump in
 inline DIRECTION checkImmediateDanger(vector<Token_t> tokens) {
     Token_t tiger = tokens[0];
@@ -131,7 +131,6 @@ inline DIRECTION checkImmediateDanger(vector<Token_t> tokens) {
 
 Move_t protectImmediateDanger(vector<Token_t> tokens, DIRECTION d) {
     Token_t tiger = tokens[0];
-    tokens.erase(tokens.begin());
     Move_t move;
     move.token = {BLUE, tiger.location};
 
@@ -146,10 +145,13 @@ Move_t protectImmediateDanger(vector<Token_t> tokens, DIRECTION d) {
     move.destination = mirror(move.token.location, tiger.location);
     move.token.location = move.destination;
     move.token.location.row++;
-    return move;
+
+    if (checkLegalMove(tokens, move)) {
+        return move;
+    }
+    return pickRandom(tokens);
 }
 
-*/
 inline Move_t humanFunction(const vector<Token_t>& tokens) {
     cout << "Human is thinking" << endl;
     Move_t m;
@@ -198,7 +200,7 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
         rowVulnerabilities = updateRowVulnerabilities(tokens, tokens);
         colVulnerabilities = updateColVulnerabilities(tokens,tokens);
 
-        /*
+
         if (checkImmediateDanger(tokens) != NONE) {
             moveList.push(protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
         }
@@ -735,10 +737,17 @@ void collectMoves(queue<Move_t>& q, vector<Move_t> moves) {
 //Checks if a move is legal (i.e. move is in bounds & destination is unoccupied)
 //Does not account for the cage
 bool checkLegalMove(const vector<Token_t>& tokens, Move_t move) {
+    bool found = false;
     for (Token_t t: tokens) {
         if (t.location == move.destination) {
             return false;
         }
+        if (t.location == move.token.location) {
+            found = true;
+        }
+    }
+    if (found == false) {
+        return false;
     }
     for(Point_t p: CAGE_COORDINATES) {
         if(isSamePoint(move.destination,p)) {
