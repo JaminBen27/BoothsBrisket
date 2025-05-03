@@ -25,7 +25,7 @@ static int TIGERMOVECOUNT = 1;
 static int HUMAN_PROGRESSION_ROW = 10;
 static bool ENDGAME = false;
 static vector<Move_t> SACMOVES;
-static enum DIRECTION {UP, DOWN, LEFT, RIGHT, NONE};
+enum DIRECTION {UP, DOWN, LEFT, RIGHT, NONE};
 
 //Game Phases
 //GENERIC USEFUL FUNCTIONS
@@ -97,6 +97,7 @@ pair<bool,Move_t> doubleScan(vector<Token_t> tokens);
 Move_t moveToClosestHuman(vector<Token_t> tokens);
 Move_t groupCenterBias(vector<Token_t> tokens);
 vector<Point_t> getLegalMoveCage(const vector<Token_t>& tokens, Token_t token);
+Move_t checkCageSpots(Move_t move, vector<Token_t> tokens);
 
 inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens, Color_t c) {
     if (c == RED) {
@@ -196,9 +197,9 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
         rowVulnerabilities = updateRowVulnerabilities(tokens, tokens);
         colVulnerabilities = updateColVulnerabilities(tokens,tokens);
 
-        if (checkImmediateDanger(tokens) != NONE) {
-            moveList.push(protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
-        }
+        // if (checkImmediateDanger(tokens) != NONE) {
+        //     moveList.push(protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
+        // }
         if(rowVulnerabilities.size() > 0) {
             temp = fixRowVuln(tokens,rowVulnerabilities);
             collectMoves(moveList,temp);
@@ -499,7 +500,17 @@ bool checkSelfSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocati
     if(p.col == tiger.location.col && p.row == tiger.location.row) {
         sac = true;
     }
-    if(tiger.lca)
+    if(onDiag(tiger) && onDiag({BLUE,newLocation})) {
+
+    }
+    if(checkHumanAt(tokens,mirror(newLocation,tiger.location))) {
+        if(tiger.location.row == newLocation.row) {
+            sac = true;
+        }
+        if(onDiag(tiger) && onDiag({BLUE,newLocation})) {
+            sac = true;
+        }
+    }
     return sac;
 }
 
@@ -1055,7 +1066,7 @@ bool inBounds(Point_t pt){
     }
 
     if (pt.col > 8 || pt.col < 0 || pt.row > 12 || pt.row < 4) {
-        cout << "I know this bad" << endl;
+        //cout << "I know this bad" << endl;
         return false;
     }
 
