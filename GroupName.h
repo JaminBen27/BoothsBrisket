@@ -212,6 +212,7 @@ Move_t getPhaseOneMove(vector<Token_t> tokens) {
 
 }
 vector<Move_t> getRowTwoHardCode(vector<Token_t> tokens) {
+    vector<pair<Point_t,Point_t>> sequence { {{10,3},{9,3}},  };
     vector<Move_t> moves;
 }
 vector<Move_t> getRowOneMoves(vector<Token_t> midRow, Token_t tiger) {
