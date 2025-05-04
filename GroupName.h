@@ -124,7 +124,7 @@
  Move_t checkCageSpots(Move_t move, vector<Token_t> tokens);
  
  inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens, Color_t c) {
-     //srand(1);
+     //srand(53);
      if (c == RED) {
          return tigerFunction(tokens);
      }
@@ -328,9 +328,9 @@
          badMove = checkBadMove(tokens,m);
      }
      if (badMove) {
-         if (HUMAN_PROGRESSION_ROW < 6) {
-             return diagonalTempo(tokens, backLine);
-         }
+         // if (HUMAN_PROGRESSION_ROW < 6) {
+         //     return diagonalTempo(tokens, backLine);
+         // }
          m =  tempo(tokens);
          shimmy = true;
          gap = tokens.front().location;
@@ -359,7 +359,7 @@
  bool giveDiag(vector<Token_t> tokens,Move_t m) {
      Token_t tiger = tokens.at(0);
      tokens.erase(tokens.begin());
-     if(onDiag(tiger) && onDiag(m.token.location) && dist(tiger.location,m.token.location)) {
+     if(onDiag(tiger) && onDiag(m.token.location) && dist(tiger.location,m.token.location) == sqrt(2)) {
          return true;
      }
      return false;
