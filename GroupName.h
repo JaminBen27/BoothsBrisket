@@ -1,3 +1,11 @@
+/* Author: Andrew Crotwell, Ben Collett, Ethan Vowels, Nathan Garcia, Rylan Kinzle
+* Assignment Title: Group Project - Tiger Game
+* Assignment Description: Create an algorithm for both the humans and the tiger moves
+* Due Date: 05/04/2025
+* Date Created: 04/21/2025
+* Date Last Modified: 05/04/2025
+ */
+
 /* TODO
   * Add Flexpiece logic to shimmy
   * Code reverse shimmy
@@ -36,73 +44,550 @@
  
  //Game Phases
  //GENERIC USEFUL FUNCTIONS
+
+/*
+ * description: hardcodes the moves near the cage
+ * return: Move_t
+ * precondition: Move_t has to be a valid point, given a vector of tokens
+ * postcondition: returns a random move
+ *
+*/
  Move_t checkCageSpots(Move_t move, vector<Token_t> tokens);
+
+/*
+ * description: checks if the move is legal
+ * return: bool
+ * precondition: given a vector of tokens and a possible Move_t
+ * postcondition: returns true if the move is legal, false if not
+ *
+*/
  bool checkLegalMove(const vector<Token_t>& tokens, Move_t move);
+
+/*
+ * description: calculates the distance between two points
+ * return: double
+ * precondition: given two points (assumed to be on the graph)
+ * postcondition: returns the distance between the two points
+ *
+*/
  double dist(Point_t p1, Point_t p2);
+
+/*
+ * description: finds the mirrored point of a mirroredVal and a pivot point
+ * return: Point_t
+ * precondition: given two points, pivot and mirroredVal
+ * postcondition: returns the point that is the mirror of the mirroredVal over the pivot point
+ *
+*/
  Point_t mirror(Point_t pivot, Point_t  mirroredVal);
+
+/*
+ * description: checks if the given token is on the diagonal
+ * return: bool
+ * precondition: given a token that is assumed to be on the board
+ * postcondition: returns true if token is on the diagonal, false if not
+ *
+*/
  bool onDiag(Token_t);
+
+/*
+ * description: checks if the given point is on the diagonal
+ * return: bool
+ * precondition: given a point that is assumed to be on the board
+ * postcondition: returns true if its on the diagonal, false if not
+ *
+*/
  bool onDiag(Point_t);
+
+/*
+ * description: checks if the given point is in the cage
+ * return: bool
+ * precondition: given a point that is assumed to be on the board
+ * postcondition: returns true if it's in the cage, false if not
+ *
+*/
  bool inCage(Point_t);
+
+/*
+ * description: moves the given token diagonal in the direction indicated
+ * return: Move_t
+ * precondition: given a token and a direction
+ * postcondition: returns the move
+ *
+*/
  Move_t moveDiag(Token_t, int);
+
+/*
+ * description: moves the token in a direction indicated by the arguments
+ * return: Move_t
+ * precondition: given a token and a direction
+ * postcondition: returns a Move_t in the indicated direction
+ *
+*/
  Move_t moveHorz(Token_t, int);
+
+/*
+ * description: moves the token in an indicated direction vertically
+ * return: Move_t
+ * precondition: given a token and a direction
+ * postcondition: returns the Move_t of the token in the specified direction
+ *
+*/
  Move_t moveVert(Token_t, int);
+
+/*
+ * description: checks if there is a human at the given point
+ * return: bool
+ * precondition: given a vector of tokens and a point to check
+ * postcondition: returns true if there is a human at that point, false if not
+ *
+*/
  bool checkHumanAt(vector<Token_t> tokens, Point_t  p);
+
+/*
+ * description: gets the token of the human located at the specified point
+ * return: Token_t
+ * precondition: given a point that is assumed to be on the board and human
+ * postcondition: returns the token of the human at the specified point
+ *
+*/
  Token_t getHumanAt(vector<Token_t> tokens, Point_t  p);
+
+/*
+ * description: checks if the given point is in the bounds of the board
+ * return: bool
+ * precondition: given a point
+ * postcondition: returns true if it is on the board, false if not
+ *
+*/
  bool inBounds(Point_t pt);
- bool isSamePoint(Point_t p1, Point_t p2);
+
+/*
+ * description: checks if two points are the same point
+ * return: bool
+ * precondition: given two points
+ * postcondition: returns true if the points are the same, false if not
+ *
+*/
+ bool isSamePoint(Point_t p1, Point_t p2);\
+
+/*
+ * description: prints the point to the console
+ * return: void
+ * precondition: given a point
+ * postcondition: prints the point to concole
+ *
+*/
  void printPoint(Point_t p);
+
+/*
+ * description: prints the move for testing
+ * return: void
+ * precondition: given a move
+ * postcondition: prints the move to console
+ *
+*/
  void printMove(Move_t m);
+
+/*
+ * description: tests if the token is on the right side of the board
+ * return: bool
+ * precondition: given a token on the board
+ * postcondition: returns true if the token is on the right side of the board, false if on the left side
+ *
+*/
  bool isTokenRight(Token_t tiger);
+
+/*
+ * description: gets the quadrant that the token is in
+ * return: int
+ * precondition: given a token
+ * postcondition: returns the integer indicator of which quadrant the point is in
+ *
+*/
  int getQuadrantFactor(Token_t token);
  //------------------------------------------------------------------
  //------------------------------------------------------------------
  //------------------------------------------------------------------
- //HUMAN SPECIFIC FUNTIONS
+ //HUMAN SPECIFIC FUNCTIONS
+
+/*
+ * description: makes the humans go stalemate
+ * return: Move_t
+ * precondition: given vector of tokens, and a token that we want to move
+ * postcondition: returns a stalemate move
+ *
+*/
  Move_t stalemate(vector<Token_t> tokens, Token_t token);
+
+/*
+ * description: if the diagonal is going to get taken
+ * return: bool
+ * precondition: given a vector of tokens
+ * postcondition: returns true if the diagonal is given up, and false if not
+ *
+*/
  bool giveDiag(vector<Token_t> tokens);
+
+/*
+ * description: fixes if there is a triple stack of humans
+ * return: vector<Move_t>
+ * precondition: given a vector of tokens of the board, and the vector of tokens in the stack
+ * postcondition: returns a vector of moves to fix it
+ *
+*/
  vector<Move_t> fixTripleStack(vector<Token_t> tokens, vector<Token_t> stack);
+
+/*
+ * description: gets the move for the shimmy
+ * return: Move_t
+ * precondition: given a vector of tokens on the board
+ * postcondition: returns a shimmy Move_t
+ *
+*/
  Move_t getShimmy(vector<Token_t> tokens);
+
+/*
+ * description: if there is a triple stack, this function finds it
+ * return: vector<Token_t>
+ * precondition: given a vector of tokens on the board
+ * postcondition: returns the vector of tokens in the triple stack
+ *
+*/
  vector<Token_t> getTripleStackCol(vector<Token_t> tokens);
+
+/*
+ * description: gets a move when the game is in the first phase
+ * return: Move_t
+ * precondition: given a vector of tokens on the board
+ * postcondition: returns a Move_t that follows our phase 1 rules
+ *
+*/
  Move_t getPhaseOneMove(vector<Token_t> tokens);
+
+/*
+ * description: gets the moves we should make for the first row
+ * return: vector<Move_t>
+ * precondition: given a vector of tokens and the tigertoken
+ * postcondition: returns the vector of moves to make
+ *
+*/
  vector<Move_t> getRowOneMoves(vector<Token_t> frontRow, Token_t tiger);
+
+/*
+ * description: picks a random move
+ * return: Move_t
+ * precondition: given a vector of tokens
+ * postcondition: returns a random move
+ *
+*/
  Move_t pickRandom (const vector<Token_t>& tokens);
+
+/*
+ * description: our main human function that returns a move based on which phase its in
+ * return: Move_t
+ * precondition: given a vector of tokens
+ * postcondition: returns the human Move_t
+ *
+*/
  Move_t humanFunction(const vector<Token_t>& tokens );
+
+/*
+ * description: check if the tiger is adjacent to the point
+ * return: bool
+ * precondition: given a token and a point
+ * postcondition: returns true if the point is adjacent to the tiger, false if not
+ *
+*/
  bool checkAdj(Token_t tiger, Point_t p);
+
+/*
+ * description: checks if the given human would be sacrificing itself if moved to the new location
+ * return: bool
+ * precondition: given the vector of tokens on the board, a token, and a point
+ * postcondition: returns true if the move would be a self sacrifice, false if not
+ *
+*/
  bool checkSelfSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocation);
+
+/*
+ * description: checks if moving the given human token to the new location point would sacrafice another human
+ * return: bool
+ * precondition: given the vector of tokens on the board, a token, and a point
+ * postcondition: returns true if the move would be a sacrifice, false if not
+ *
+*/
  bool checkSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocation);
+
+/*
+ * description: checks if two tokens are the same
+ * return: bool
+ * precondition: given two tokens
+ * postcondition: returns true if they are the same token, false if not
+ *
+*/
  bool checkSameToken(Token_t token1, Token_t token2);
+
+/*
+ * description: returns every piece that needs to move up
+ * return: bool
+ * precondition: given three vectors of tokens
+ * postcondition: returns the vector of moves that move the furthest pieces closer
+ *
+*/
  vector<Move_t> getFurthestPieces(vector<Token_t> tokens,vector<Token_t>,vector<Token_t>);
+
+/*
+ * description: checks if the piece is vulnerable in the row but the tiger is not there
+ * return: bool
+ * precondition: given the vector of tokens on the board and a token
+ * postcondition: returns true if the piece is vulnerable, false if not
+ *
+*/
  bool checkRowVulnerability(vector<Token_t> tokens, Token_t piece);
+
+/*
+ * description: checks if the piece is in immediate danger
+ * return: bool
+ * precondition: given the vector of tokens on the board and a token
+ * postcondition: returns true if the piece is in danger, false if not
+ *
+*/
  bool checkColumnDanger(vector<Token_t> tokens, Token_t piece);
+
+/*
+ * description: checks if the human is about to dir
+ * return: DIRECTION
+ * precondition: given the vector of tokens
+ * postcondition: returns what direction they would die in
+ *
+*/
  DIRECTION checkImmediateDanger(vector<Token_t> tokens);
- 
+
+/*
+ * description: returns vulnerable pieces that are horizontal
+ * return: vector<Token_t>
+ * precondition: given two vectors of tokens
+ * postcondition: returns the vulnerabilities
+ *
+*/
  vector<Token_t> updateColVulnerabilities(vector<Token_t> tokens, vector<Token_t>);
+
+/*
+ * description: returns vulnerable pieces that are vertical
+ * return: vector<Token_t>
+ * precondition: given two vectors of tokens
+ * postcondition: returns the vulnerabilities
+ *
+*/
  vector<Token_t> updateRowVulnerabilities(vector<Token_t> tokens,vector<Token_t>);
+
+ /*
+ * description: moves that fix the row vulnerabilities
+ * return: vector<Move_t>
+ * precondition: given two vectors of tokens
+ * postcondition: returns the moves to fix the row vulnerabilities
+ *
+*/
  vector<Move_t> fixRowVuln(vector<Token_t> tokens, vector<Token_t> rowVulns);
+
+/*
+ * description: moves that fix the column vulnerabilities
+ * return: vector<Move_t>
+ * precondition: given two vectors of tokens
+ * postcondition: returns the moves to fix the column vulnerabilities
+ *
+*/
  vector<Move_t> fixColVuln(vector<Token_t> tokens, vector<Token_t> colVulns);
- 
+
+/*
+* description: sorts the vector of the tokens in order of their distance from the tiger
+* return: vector<Token_t>
+* precondition: given a vector of tokens and the tiger token
+* postcondition: returns the sorted vector of tokens
+*
+*/
  vector<Token_t> sortDistanceFromTiger(vector<Token_t> tokens, Token_t tiger);
- 
+
+/*
+ * description: updates the progression row value
+ * return: void
+ * precondition: given the vector of tokens
+ * postcondition: changes the progression row
+ *
+*/
  void updateProgressionRow(vector<Token_t> tokens);
+
+/*
+ * description: gets a vector of points that are available on the diagonal
+ * return: vector<Point_t>
+ * precondition: given a vector of tokens
+ * postcondition: returns a vector of points
+ *
+*/
  vector<Point_t> availableDiag(vector<Token_t> tokens);
+
+/*
+ * description: returns moves that takes the diagonal
+ * return: vector<Move_t>
+ * precondition: given the vector of tokens
+ * postcondition: returns the moves to take the diagonal
+ *
+*/
  vector<Move_t> takeDiag(vector<Token_t> tokens);
+
+ /*
+ * description: checks if the move is a bad move
+ * return: bool
+ * precondition: given a vector of tokens and a move
+ * postcondition: returns true if its a bad move, false if not
+ *
+*/
  bool checkBadMove(vector<Token_t> tokens, Move_t m);
+
+ /*
+ * description: collects the moves into a queue
+ * return: void
+ * precondition: given a queue of moves by reference and a vector of moves
+ * postcondition: fills the queue with moves
+ *
+*/
  void collectMoves(queue<Move_t>&, vector<Move_t>);
+
+/*
+ * description: gets the absolutely furthest token from the tiger
+ * return: Token_t
+ * precondition: given a vector of tokens
+ * postcondition: returns the furthest token from the tiger
+ *
+*/
  Token_t getAbsFurthest(vector<Token_t> tokens);
+
+/*
+ * description: move that forces the tiger to reposition
+ * return: Move_t
+ * precondition: given a vector of tokens
+ * postcondition: returns a move that does not progress us but positions us to be able to make a good move
+ *
+*/
  Move_t tempo(vector<Token_t>);
+
+ /*
+ * description: gets the front row of humans
+ * return: vector<Token_t>
+ * precondition: given a vector of tokens
+ * postcondition: returns a vector of tokens on the front row
+ *
+*/
  vector<Token_t> getFrontRow(vector<Token_t>);
+
+ /*
+ * description: gets the middle row of humans
+ * return: vector<Token_t>
+ * precondition: given a vector of tokens
+ * postcondition: returns a vector of tokens on the middle row
+ *
+*/
  vector<Token_t> getMiddleRow(vector<Token_t>);
+
+/*
+ * description: gets the back row of humans
+ * return: vector<Token_t>
+ * precondition: given a vector of tokens
+ * postcondition: returns a vector of tokens on the back row
+ *
+*/
  vector<Token_t> getBackRow(vector<Token_t>);
+
+/*
+ * description: gets which half of the board the point is on
+ * return: int
+ * precondition: given a point
+ * postcondition: returns what half of the board the point is on
+ *
+*/
  int  getHalf(Point_t p);
+
+/*
+ * description: a sequence of moves to protect from immediate danger from a specified direction
+ * return: vector<Move_t>
+ * precondition: given a vector of tokens and a direction of approaching danger
+ * postcondition: returns a vector of moves to protect from the danger
+ *
+*/
  vector<Move_t> protectImmediateDanger(vector<Token_t> tokens, DIRECTION d);
+
+/*
+ * description: checks if there is an immediate danger
+ * return: DIRECTION
+ * precondition: given a vector of tokens
+ * postcondition: returns the direction of danger
+ *
+*/
  inline DIRECTION checkImmediateDanger(vector<Token_t> tokens);
  //HUMAN END GAME FUNCTIONS
+
+ /*
+ * description: gets our human endGame move that follows our end game strategy
+ * return: Move_t
+ * precondition: given a vector of tokens and a queue of the move list
+ * postcondition: returns an endgame Move_t
+ *
+*/
  Move_t getEndGameMove(vector<Token_t> tokens, queue<Move_t>& moveList);
+
+ /*
+ * description: gets a move from a given point and a token
+ * return: Move_t
+ * precondition: given a token and a point
+ * postcondition: returns a Move_t
+ *
+*/
  Move_t moveTo(Token_t t, Point_t p);
+
+ /*
+ * description: gets the humans that are in the box
+ * return: vector<Token_t>
+ * precondition: given a vector of tokens
+ * postcondition: returns a vector of tokens of humans in the box
+ *
+*/
  vector<Token_t> getBoxHumans(vector<Token_t> tokens);
+
+/*
+ * description: gets the replacement moves
+ * return: vector<Move_t>
+ * precondition: given a vector of tokens
+ * postcondition: returns a vector of replacement moves
+ *
+*/
  vector<Move_t> getReplacementMoves(vector<Token_t> tokens);
+
+/*
+ * description: gets the moves when in the box
+ * return: vector<Move_t>
+ * precondition: given a vector of tokens, a vector of the box tokens, and the tiger token
+ * postcondition: returns a vector of our moves
+ *
+*/
  vector<Move_t> getBoxMoves(vector<Token_t> tokens,vector<Token_t> boxTokens,Token_t tiger);
+
+/*
+ * description: goes through all legal moves for pieces in the box and takes corners as the priority
+ * return: void
+ * precondition: given a vector of Move_t  s
+ * postcondition: changes the moves that should be made
+ *
+*/
  void proccessDiagonals(vector<Move_t>& moves);
+
+/*
+ * description: determines where the pieces for end game are at
+ * return: int
+ * precondition: given a vector of tokens
+ * postcondition: returns the number of pieces loaded up
+ *
+*/
  int getAmmo(vector<Token_t> tokens);
  
  //---------------------------------------------------------------------
