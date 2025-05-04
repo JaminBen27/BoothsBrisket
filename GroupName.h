@@ -281,7 +281,7 @@
  * postcondition: returns a random move
  *
 */
- Move_t pickRandom (const vector<Token_t>& tokens);
+ Move_t pickRandom (const vector<Token_t> tokens);
 
 /*
  * description: our main human function that returns a move based on which phase its in
