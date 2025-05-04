@@ -1,6 +1,5 @@
 /* TODO
   * Add Flexpiece logic to shimmy
-  * Code reverse shimmy
   */
  
  #include <vector>
@@ -58,6 +57,7 @@
  //------------------------------------------------------------------
  //------------------------------------------------------------------
  //HUMAN SPECIFIC FUNTIONS
+Move_t diagonalTempo (vector<Token_t> tokens, vector<Token_t> backLine);
  Move_t stalemate(vector<Token_t> tokens, Token_t token);
  bool giveDiag(vector<Token_t> tokens);
  vector<Move_t> fixTripleStack(vector<Token_t> tokens, vector<Token_t> stack);
@@ -224,105 +224,7 @@
      }
      return stalemate(tokens, cornerPiece);
  }
- 
- Move_t getShimmy(vector<Token_t> tokens) {
-     if (doTempo) {
-         doTempo = false;
-         return tempo(tokens);
-     }
-     Token_t tiger = tokens[0];
-     tokens.erase(tokens.begin());
-     Move_t move;
- 
-     if (dist(tiger.location, gap) > 2 && gap.col == flex.col) {
-         move.token = {BLUE, gap};
-         move.destination = move.token.location;
-         move.token.location.row++;
-         shimmy = false;
-         return move;
-     }
- 
-     //Set destination to pocket
-     move.destination = gap;
-     move.token = {BLUE, move.destination};
- 
-     //Pick closer diagonal to move to
-     bool left = false;
-     if (gap.col <= 4) {
-         left = true;
-     }
-     if (onDiag(flex) == false && flex.col != gap.col) {
-         doTempo = true;
-         move.token = {BLUE, flex};
-         move.destination = flex;
-         if (left) {
-             move.destination.col--;
-             flex.col--;
-         }
-         else {
-             move.destination.col++;
-             flex.col++;
-         }
-         return move;
-     }
- 
-     if (onDiag(move.destination)) {
-         diagCount++;
-         if (diagCount == 2) {
-             diagCount = 0;
-             shimmy = false;
-         }
-         move.token.location.row++;
-         gap.row++;
-         if (left) {
-             gap.col++;
-             move.token.location.col++;
-         }
-         else {
-             gap.col--;
-             move.token.location.col--;
-         }
-         return move;
-     }
- 
- 
-     if (left) {
-         move.token.location.col--;
-     }
-     else {
-         move.token.location.col++;
-     }
-     gap = move.token.location;
- 
-     return move;
- }
- 
- Move_t diagonalTempo (vector<Token_t> tokens, vector<Token_t> backLine) {
-     Token_t tiger = tokens[0];
-     tokens.erase(tokens.begin());
-     bool left = false;
- 
-     if (tiger.location.col <= 4) {
-         left = true;
-     }
-     Move_t move;
-     move.destination = backLine.front().location;
- 
-     while (onDiag(move.destination) == false) {
-         if (left) {
-             move.destination.col--;
-         }
-         else {
-             move.destination.col++;
-         }
-     }
- 
-     move.token = {BLUE, move.destination};
-     move.token.location.row--;
- 
-     return move;
- }
- 
+
  inline Move_t humanFunction(const vector<Token_t>& tokens) {
      cout << "Human is thinking" << endl;
      Move_t m;
@@ -416,7 +318,6 @@
              return diagonalTempo(tokens, backLine);
          }
          m =  tempo(tokens);
-         shimmy = true;
          gap = tokens.front().location;
          flex = tokens.front().location;
          flex.row += 2;
@@ -440,6 +341,107 @@
      }
      return moves;
  }
+Move_t getReverseShimmy(vector<Token_t> tokens) {
+
+ }
+ Move_t getShimmy(vector<Token_t> tokens) {
+     if (doTempo) {
+         doTempo = false;
+         return tempo(tokens);
+     }
+     Token_t tiger = tokens[0];
+     tokens.erase(tokens.begin());
+     Move_t move;
+
+     if (dist(tiger.location, gap) > 2 && gap.col == flex.col) {
+         move.token = {BLUE, gap};
+         move.destination = move.token.location;
+         move.token.location.row++;
+         shimmy = false;
+         return move;
+     }
+
+     //Set destination to pocket
+     move.destination = gap;
+     move.token = {BLUE, move.destination};
+
+     //Pick closer diagonal to move to
+     bool left = false;
+     if (gap.col <= 4) {
+         left = true;
+     }
+     if (onDiag(flex) == false && flex.col != gap.col) {
+         doTempo = true;
+         move.token = {BLUE, flex};
+         move.destination = flex;
+         if (left) {
+             move.destination.col--;
+             flex.col--;
+         }
+         else {
+             move.destination.col++;
+             flex.col++;
+         }
+         return move;
+     }
+
+     if (onDiag(move.destination)) {
+         diagCount++;
+         if (diagCount == 2) {
+             diagCount = 0;
+             shimmy = false;
+         }
+         move.token.location.row++;
+         gap.row++;
+         if (left) {
+             gap.col++;
+             move.token.location.col++;
+         }
+         else {
+             gap.col--;
+             move.token.location.col--;
+         }
+         return move;
+     }
+
+
+     if (left) {
+         move.token.location.col--;
+     }
+     else {
+         move.token.location.col++;
+     }
+     gap = move.token.location;
+
+     return move;
+ }
+
+ Move_t diagonalTempo (vector<Token_t> tokens, vector<Token_t> backLine) {
+     Token_t tiger = tokens[0];
+     tokens.erase(tokens.begin());
+     bool left = false;
+
+     if (tiger.location.col <= 4) {
+         left = true;
+     }
+     Move_t move;
+     move.destination = backLine.front().location;
+
+     while (onDiag(move.destination) == false) {
+         if (left) {
+             move.destination.col--;
+         }
+         else {
+             move.destination.col++;
+         }
+     }
+
+     move.token = {BLUE, move.destination};
+     move.token.location.row--;
+
+     return move;
+ }
+
  bool giveDiag(vector<Token_t> tokens,Move_t m) {
      Token_t tiger = tokens.at(0);
      tokens.erase(tokens.begin());
