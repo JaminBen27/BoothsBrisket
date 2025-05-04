@@ -283,7 +283,7 @@
          temp = getRowOneMoves(midLine,tokens[0]);
          collectMoves(moveList,temp);
      }
-     if(shimmy) {
+     if(shimmy && HUMAN_PROGRESSION_ROW >= 8) {
          return getShimmy(tokens);
      }
      if (checkImmediateDanger(tokens) != NONE) {
