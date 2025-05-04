@@ -1120,68 +1120,70 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
 
     // //BENS TESTING ALG
 
-     vector<Point_t> p;
-    if(inCage(tigerToken.location)) {
-        p = getLegalMovesCage(tokens,tigerToken);
-    }
-    else {
-        p = getLegalMovesSquare(tokens,tigerToken);
-    }
-    random = random%p.size();
-    move.destination = p[random];
-    return move;
+    //  vector<Point_t> p;
+    // if(inCage(tigerToken.location)) {
+    //     p = getLegalMovesCage(tokens,tigerToken);
+    // }
+    // else {
+    //     p = getLegalMovesSquare(tokens,tigerToken);
+    // }
+    // random = random%p.size();
+    // move.destination = p[random];
+    // return move;
+
+
     //Temporary fix for picking left or right randomly
 
 
 
 
 
-     // if (random % 2 == 0){
-     //     random = 1;
-     // } else {
-     //     random = 4;
-     // }
-     // if (TIGERMOVECOUNT <= 5) {
-     //
-     //     if (TIGERMOVECOUNT == 1) {
-     //         move = moveDiag(tigerToken, 4);
-     //     }
-     //     else if (TIGERMOVECOUNT == 2){
-     //         move = moveDiag(tigerToken, 1);
-     //     }
-     //     else if (TIGERMOVECOUNT >= 3 && TIGERMOVECOUNT <= 5) {
-     //         move = moveDiag(tigerToken, random);
-     //     }
-     // }
-     // if ((tokens.size() -1 > 14) && TIGERMOVECOUNT >= 6) {
-     //     pair<bool, Move_t> scanning = singleScan(tokens, tigerToken.location);
-     //     pair<bool, Move_t> secondScan = doubleScan(tokens);
-     //     if (scanning.first == true) {
-     //         move.destination = scanning.second.destination;
-     //         if (isOccupied(tokens, move.destination)) {
-     //             if (checkOpen(tokens, move.destination)) {
-     //                 Point_t mir = mirror(move.destination, tigerToken.location);
-     //                 move = takeHuman(tigerToken, tokens, mir);
-     //             } else {
-     //                 move = pickRandom(tokens, move);
-     //             }
-     //         }
-     //     } else if (secondScan.first == true) {
-     //         move.destination = secondScan.second.destination;
-     //     } else {
-     //         move = groupCenterBias(tokens);
-     //     }
-     // }
-     // else if (tokens.size() - 1 < 15) {
-     //     move = huntingMode(tokens);
-     // }
-     // TIGERMOVECOUNT++;
-     // if ( inBounds(move.destination) && ! isOccupied(tokens, move.destination)) {
-     //     move = checkCageSpots(move, tokens);
-     //     return move;
-     // }
-     //     move = pickRandom(tokens, move);
-     //     return move;
+     if (random % 2 == 0){
+         random = 1;
+     } else {
+         random = 4;
+     }
+     if (TIGERMOVECOUNT <= 5) {
+
+         if (TIGERMOVECOUNT == 1) {
+             move = moveDiag(tigerToken, 4);
+         }
+         else if (TIGERMOVECOUNT == 2){
+             move = moveDiag(tigerToken, 1);
+         }
+         else if (TIGERMOVECOUNT >= 3 && TIGERMOVECOUNT <= 5) {
+             move = moveDiag(tigerToken, random);
+         }
+     }
+     if ((tokens.size() -1 > 14) && TIGERMOVECOUNT >= 6) {
+         pair<bool, Move_t> scanning = singleScan(tokens, tigerToken.location);
+         pair<bool, Move_t> secondScan = doubleScan(tokens);
+         if (scanning.first == true) {
+             move.destination = scanning.second.destination;
+             if (isOccupied(tokens, move.destination)) {
+                 if (checkOpen(tokens, move.destination)) {
+                     Point_t mir = mirror(move.destination, tigerToken.location);
+                     move = takeHuman(tigerToken, tokens, mir);
+                 } else {
+                     move = pickRandom(tokens, move);
+                 }
+             }
+         } else if (secondScan.first == true) {
+             move.destination = secondScan.second.destination;
+         } else {
+             move = groupCenterBias(tokens);
+         }
+     }
+     else if (tokens.size() - 1 < 15) {
+         move = huntingMode(tokens);
+     }
+     TIGERMOVECOUNT++;
+     if ( inBounds(move.destination) && ! isOccupied(tokens, move.destination)) {
+         move = checkCageSpots(move, tokens);
+         return move;
+     }
+         move = pickRandom(tokens, move);
+         return move;
 }
 
 bool onDiag(Token_t token){
