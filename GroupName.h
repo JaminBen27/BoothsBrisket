@@ -48,7 +48,7 @@ bool inBounds(Point_t pt);
 bool isSamePoint(Point_t p1, Point_t p2);
 void printPoint(Point_t p);
 void printMove(Move_t m);
-bool isTigerRight(Token_t tiger);
+bool isTokenRight(Token_t tiger);
 //------------------------------------------------------------------
 //------------------------------------------------------------------
 //------------------------------------------------------------------
@@ -273,7 +273,7 @@ vector<Move_t> getRowTwoHardCode(vector<Token_t> tokens) {
     vector<Move_t> moves;
 }
 vector<Move_t> getRowOneMoves(vector<Token_t> midRow, Token_t tiger) {
-    bool right = isTigerRight(tiger);
+    bool right = isTokenRight(tiger);
     vector<Move_t> moves;
     Move_t m;
     for(Token_t t: midRow) {
@@ -319,7 +319,7 @@ Move_t getEndGameMove(vector<Token_t> tokens, queue<Move_t>& moveList) {
         cout << "BAD THING";
     }
 }
-bool isTigerRight(Token_t tiger) {
+bool isTokenRight(Token_t tiger) {
     return tiger.location.col >= 4;
 }
 void printMove(Move_t m) {
@@ -479,7 +479,16 @@ vector<Move_t> getReplacementMoves(vector<Token_t> tokens) {
 Move_t moveTo(Token_t t, Point_t p) {
     Move_t m;
     m.token = t;
-    //TODO: REFACTOR: incage() should take a point
+    // if(onDiag(t) && onDiag(p) && dist(t.location,p) == sqrt(2)) {
+    //     m.destination = p;
+    // }
+    // if(onDiag(t) && onDiag(p) && dist(t.location,p) == sqrt(8)) {
+    //
+    //     m.destination.row = p.row;
+    //     if(isTokenRight(t)) {
+    //         m.destination.col
+    //     }
+    // }
     if(!inCage(t.location)) {
         if(t.location.row == p.row) {
             if(t.location.col > p.col) {
@@ -724,7 +733,10 @@ vector<Move_t> takeDiag(vector<Token_t> tokens) {
     vector<Point_t> diagSpots = availableDiag(tokens);
     for(Point_t p: diagSpots) {
         for(Token_t t: tokens) {
-            if(t.location.col == p.col && t.location.row == p.row+1) {
+            if(dist(t.location,p) == sqrt(2) && onDiag(t)) {
+                m = moveTo(t,p);
+            }
+            else if(t.location.col == p.col && t.location.row == p.row+1) {
                 m.token = t;
                 m.destination = p;
                 moves.push_back(m);
