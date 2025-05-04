@@ -21,7 +21,11 @@ const vector<Point_t> CAGE_COORDINATES = {
 
 static int TIGERMOVECOUNT = 1;
 bool shimmy = false;
+bool reachedCorner = false;
 bool doTempo = false;
+bool inCorner = false;
+Move_t tigerMove = {{RED, {2, 4}}, {2,4}};
+Token_t cornerPiece = {RED, {-1,-1}};
 static Point_t gap = {-1, -1};
 static Point_t flex = {-1, -1};
 static int diagCount = 0;
@@ -53,6 +57,7 @@ bool isTigerRight(Token_t tiger);
 //------------------------------------------------------------------
 //------------------------------------------------------------------
 //HUMAN SPECIFIC FUNTIONS
+Move_t stalemate(vector<Token_t> tokens, Token_t token);
 Move_t getPhaseOneMove(vector<Token_t> tokens);
 vector<Move_t> getRowOneMoves(vector<Token_t> frontRow, Token_t tiger);
 Move_t pickRandom (const vector<Token_t>& tokens);
@@ -118,7 +123,17 @@ inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens, Color_t c) {
     if (c == RED) {
         return tigerFunction(tokens);
     }
-    return humanFunction(tokens);
+
+    tigerMove.token.location = tigerMove.destination;
+    tigerMove.destination = tokens.front().location;
+
+    if (tokens.size() > 14) {
+        return humanFunction(tokens);
+    }
+    if (cornerPiece.color == RED) {
+        cornerPiece = getAbsFurthest(tokens);
+    }
+    return stalemate(tokens, cornerPiece);
 }
 
 Move_t getShimmy(vector<Token_t> tokens) {
@@ -193,11 +208,30 @@ Move_t getShimmy(vector<Token_t> tokens) {
     return move;
 }
 
-Move_t getReverseShimmy(vector<Token_t> tokens) {
-    if (doTempo) {
-        doTempo = false;
-        return tempo(tokens);
+Move_t diagonalTempo (vector<Token_t> tokens, vector<Token_t> backLine) {
+    Token_t tiger = tokens[0];
+    tokens.erase(tokens.begin());
+    bool left = false;
+
+    if (tiger.location.col <= 4) {
+        left = true;
     }
+    Move_t move;
+    move.destination = backLine.front().location;
+
+    while (onDiag(move.destination) == false) {
+        if (left) {
+            move.destination.col--;
+        }
+        else {
+            move.destination.col++;
+        }
+    }
+
+    move.token = {BLUE, move.destination};
+    move.token.location.row--;
+
+    return move;
 }
 
 inline Move_t humanFunction(const vector<Token_t>& tokens) {
@@ -275,6 +309,9 @@ Move_t getPhaseOneMove(vector<Token_t> tokens) {
         badMove = checkBadMove(tokens,m);
     }
     if (badMove) {
+        if (HUMAN_PROGRESSION_ROW < 6) {
+            return diagonalTempo(tokens, backLine);
+        }
         m =  tempo(tokens);
         shimmy = true;
         gap = tokens.front().location;
@@ -286,6 +323,8 @@ Move_t getPhaseOneMove(vector<Token_t> tokens) {
 vector<Move_t> getRowTwoHardCode(vector<Token_t> tokens) {
     vector<pair<Point_t,Point_t>> sequence { {{10,3},{9,3}},  };
     vector<Move_t> moves;
+
+    return moves;
 }
 vector<Move_t> getRowOneMoves(vector<Token_t> midRow, Token_t tiger) {
     bool right = isTigerRight(tiger);
@@ -333,6 +372,7 @@ Move_t getEndGameMove(vector<Token_t> tokens, queue<Move_t>& moveList) {
     else {
         cout << "BAD THING";
     }
+    return m;
 }
 bool isTigerRight(Token_t tiger) {
     return tiger.location.col >= 4;
@@ -369,7 +409,7 @@ inline DIRECTION checkImmediateDanger(vector<Token_t> tokens) {
     return NONE;
 }
 
-vector<Move_t> protectImmediateDanger(vector<Token_t> tokens, DIRECTION d) {
+vector<Move_t> protectImmediateDanger(vector<Token_t> tokens, const DIRECTION d) {
     Token_t tiger = tokens[0];
     vector<Move_t> moves;
     Move_t move;
@@ -382,6 +422,8 @@ vector<Move_t> protectImmediateDanger(vector<Token_t> tokens, DIRECTION d) {
         case RIGHT:
             move.token.location.col++;
         break;
+        default:
+            break;
     }
     move.destination = mirror(move.token.location, tiger.location);
     move.token.location = move.destination;
@@ -658,6 +700,81 @@ vector<Token_t> updateRowVulnerabilities(vector<Token_t> tokens, vector<Token_t>
             }
     }
     return rowVulns;
+}
+
+//Takes a token and sends it to the corner
+Move_t goToCorner (vector<Token_t> tokens, Token_t token) {
+    Move_t move;
+    move.token = token;
+    move.destination = token.location;
+
+    if (move.token.location.col == 0 || move.token.location.col == 8) {
+        if (move.token.location.row < 8) {
+            move.destination.row--;
+            cornerPiece.location.row--;
+        }
+        else {
+            move.destination.row++;
+            cornerPiece.location.row++;
+        }
+    }
+    else {
+        if (move.token.location.col < 4) {
+            move.destination.col--;
+            cornerPiece.location.col--;
+        }
+        else {
+            move.destination.col++;
+            cornerPiece.location.col++;
+        }
+    }
+
+    if (isOccupied(tokens, move.destination)) {
+        return pickRandom({{BLUE, move.destination}});
+    }
+
+    return move;
+}
+
+double distToCorner(Token_t token) {
+    double shortestPath = 100;
+    double d;
+    vector<Point_t> corners = {{12,0},{12,8},{4,0},{4,8}};
+    for (Point_t p : corners) {
+        d = dist(token.location, p);
+        if (d < shortestPath) {
+            shortestPath = d;
+        }
+    }
+
+    return shortestPath;
+}
+
+Move_t mirror() {
+    int row = tigerMove.destination.row - tigerMove.token.location.row;
+    int col = tigerMove.destination.col - tigerMove.token.location.col;
+
+    Move_t move;
+    move.token = cornerPiece;
+    cornerPiece.location.row -= row;
+    cornerPiece.location.col -= col;
+    move.destination = cornerPiece.location;
+
+    return move;
+
+}
+
+Move_t stalemate (vector<Token_t> tokens, Token_t token) {
+    if (distToCorner(token) == 0) {
+        reachedCorner = true;
+    }
+    if (reachedCorner == false || distToCorner(token) == 1) {
+        return goToCorner(tokens, token);
+    }
+    if (dist(cornerPiece.location, tigerMove.destination) == 1) {
+        return mirror();
+    }
+    return pickRandom({token});
 }
 
 
@@ -957,6 +1074,9 @@ Move_t pickRandom (const vector<Token_t>& tokens) {
             move.destination.row = move.token.location.row - 1;
         }
     } while (checkLegalMove(tokens, move) == false);
+    if (reachedCorner) {
+        cornerPiece.location = move.destination;
+    }
     return move;
 }
 //TIGER RANDOM
