@@ -1,10 +1,8 @@
-/*TODO
- *KNOW BUGS +
- *  DONE selfSac isnt working for column captures
- *  Sometimes tiger gets confused and doesnt returna move
- *  END game crashes sometimes for humans
- *  Tiger and humans can jump into cage from 4,5 and 3,3
+/* TODO
+ * Add Flexpiece logic to shimmy
+ * Code reverse shimmy
  */
+
 #include <vector>
 #include <cstdlib>
 #include <list>
@@ -22,8 +20,11 @@ const vector<Point_t> CAGE_COORDINATES = {
 };
 
 static int TIGERMOVECOUNT = 1;
-static bool shimmy = false;
-static bool reverseShimmy = false;
+bool shimmy = false;
+bool doTempo = false;
+static Point_t gap = {-1, -1};
+static Point_t flex = {-1, -1};
+static int diagCount = 0;
 static int HUMAN_PROGRESSION_ROW = 10;
 static bool ENDGAME = false;
 static vector<Move_t> SACMOVES;
@@ -36,6 +37,7 @@ bool checkLegalMove(const vector<Token_t>& tokens, Move_t move);
 double dist(Point_t p1, Point_t p2);
 Point_t mirror(Point_t pivot, Point_t  mirroredVal);
 bool onDiag(Token_t);
+bool onDiag(Point_t);
 bool inCage(Point_t);
 Move_t moveDiag(Token_t, int);
 Move_t moveHorz(Token_t, int);
@@ -119,6 +121,70 @@ inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens, Color_t c) {
     return humanFunction(tokens);
 }
 
+Move_t getShimmy(vector<Token_t> tokens) {
+    if (doTempo) {
+        doTempo = false;
+        return tempo(tokens);
+    }
+    Token_t tiger = tokens[0];
+    tokens.erase(tokens.begin());
+    Move_t move;
+
+    //Set destination to pocket
+    move.destination = gap;
+    move.token = {BLUE, move.destination};
+
+    //Pick closer diagonal to move to
+    bool left = false;
+    if (gap.col <= 4) {
+        left = true;
+    }
+    if (onDiag(flex) == false && flex.col != gap.col) {
+        doTempo = true;
+        move.token = {BLUE, flex};
+        move.destination = flex;
+        if (left) {
+            move.destination.col--;
+            flex.col--;
+        }
+        else {
+            move.destination.col++;
+            flex.col++;
+        }
+        return move;
+    }
+
+    if (onDiag(move.destination)) {
+        diagCount++;
+        if (diagCount == 2) {
+            diagCount = 0;
+            shimmy = false;
+        }
+        move.token.location.row++;
+        gap.row++;
+        if (left) {
+            gap.col++;
+            move.token.location.col++;
+        }
+        else {
+            gap.col--;
+            move.token.location.col--;
+        }
+        return move;
+    }
+
+
+    if (left) {
+        move.token.location.col--;
+    }
+    else {
+        move.token.location.col++;
+    }
+    gap = move.token.location;
+
+    return move;
+}
+
 inline Move_t humanFunction(const vector<Token_t>& tokens) {
     cout << "Human is thinking" << endl;
     Move_t m;
@@ -141,38 +207,32 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
 Move_t getPhaseOneMove(vector<Token_t> tokens) {
     Move_t m;
     Token_t token;
-    bool earlyGame;          //First Half of Board
-    bool midGamer;           //Second Half of Board
-    bool lateGame;           //Cage
 
-    vector<Token_t> rowVulnerabilities;    //Pieces that are vulnerable to a vertical jump
-    vector<Token_t> colVulnerabilities;    //Pieces that are vulnerable to a horizontal jump
-
-    vector<Token_t> frontLine;
-    vector<Token_t> midLine;
-    vector<Token_t> backLine;
-
+    //Stores possible moves that can be made
     queue<Move_t> moveList;
     vector<Move_t> temp;
-    frontLine = getFrontRow(tokens);
-    midLine = getMiddleRow(tokens);
-    backLine = getBackRow(tokens);
-    rowVulnerabilities = updateRowVulnerabilities(tokens, frontLine);
-    colVulnerabilities = updateColVulnerabilities(tokens,frontLine);
+
+    vector<Token_t> frontLine = getFrontRow(tokens);
+    vector<Token_t> midLine = getMiddleRow(tokens);
+    vector<Token_t> backLine = getBackRow(tokens);
+    vector<Token_t> rowVulnerabilities = updateRowVulnerabilities(tokens, frontLine);
+    vector<Token_t> colVulnerabilities = updateColVulnerabilities(tokens,frontLine);
+
+    updateProgressionRow(tokens);
+
     //ROW 1 AVOID IMEDIATE DEATH
     if(HUMAN_PROGRESSION_ROW == 10) {
         temp = getRowOneMoves(midLine,tokens[0]);
         collectMoves(moveList,temp);
     }
     if(shimmy) {
-        return m;
+        return getShimmy(tokens);
     }
     if (checkImmediateDanger(tokens) != NONE) {
         temp = (protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
         collectMoves(moveList,temp);
 
     }
-
     if (checkImmediateDanger(tokens) != NONE) {
         temp = (protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
         collectMoves(moveList,temp);
@@ -185,12 +245,6 @@ Move_t getPhaseOneMove(vector<Token_t> tokens) {
         temp = fixColVuln(tokens,colVulnerabilities);
         collectMoves(moveList,temp);
     }
-
-    // if (frontLine.size() < 3) {
-    //     temp = takeDiag(tokens);
-    //     collectMoves(moveList,temp);
-    // }
-
     temp = getFurthestPieces(tokens,midLine,backLine);
     collectMoves(moveList,temp);
     bool badMove = true;
@@ -207,9 +261,12 @@ Move_t getPhaseOneMove(vector<Token_t> tokens) {
     }
     if (badMove) {
         m =  tempo(tokens);
+        shimmy = true;
+        gap = tokens.front().location;
+        flex = tokens.front().location;
+        flex.row += 2;
     }
     return m;
-
 }
 vector<Move_t> getRowTwoHardCode(vector<Token_t> tokens) {
     vector<Move_t> moves;
@@ -972,6 +1029,17 @@ bool onDiag(Token_t token){
     for (const Point_t& diagPoint : DIAGONAL_COORDINATES){
         if (token.location.row == diagPoint.row) {
             if (token.location.col == diagPoint.col) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool onDiag(Point_t point) {
+    for (const Point_t& diagPoint : DIAGONAL_COORDINATES){
+        if (point.row == diagPoint.row) {
+            if (point.col == diagPoint.col) {
                 return true;
             }
         }
