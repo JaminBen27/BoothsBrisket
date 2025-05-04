@@ -109,22 +109,105 @@
  //---------------------------------------------------------------------
  //---------------------------------------------------------------------
  //TIGER SPECIFIC FUNCTIONS
+
+/*
+ * Description: picks a random move
+ * Return: Move_t
+ * Pre condtion: There are tokens on the board and a move that needs randomization
+ * Post condition: returns a random move for the tiger
+ */
  Move_t pickRandom(vector<Token_t> tokens, Move_t move);
+
+/*
+ * Description: Tiger logic controller
+ * Return: Move_t
+ * Pre condtion: It is the tiger's turn and the game is not over
+ * Post condition: returns the move for the tiger
+ */
  Move_t tigerFunction(const vector<Token_t>&);
+
+/*
+ * Description: gets a list of all legal points in the cage
+ * Return: vector<Point_t>
+ * Pre condtion: The game is active and the tiger is in the cage
+ * Post condition: tells the tiger what cage moves are available
+ */
  vector<Point_t> getLegalMovesCage(const vector<Token_t>&, Token_t);
+
+/*
+ * Description: Gets a list of legal board points
+ * Return: vector<Point_t>
+ * Pre condtion: There are tokens on the board
+ * Post condition: tells the tiger what moves are on the board
+ */
  vector<Point_t> getLegalMovesSquare(const vector<Token_t>&, Token_t);
+
+/*
+ * Description: checks to see if the point in front of the tiger is occupied by a human
+ * Return: bool
+ * Pre condtion: the tiger wants to move to a position
+ * Post condition: returns true or false depending on if the space is filled
+ */
  bool isOccupied(const vector<Token_t>&, Point_t);
+
+/*
+ * Description: Takes a human
+ * Return: Move_t
+ * Pre condtion: There is a human in front of the tiger that is unprotected
+ * Post condition: takes the piece and moves the tiger past it
+ */
  Move_t takeHuman ( Token_t tiger, const vector<Token_t>& tokens, Point_t goal );
+
+/*
+ * Description: checks if the space behind a piece is open
+ * Return: bool
+ * Pre condtion: there is an occupied piece in front of the tiger
+ * Post condition: returns true or flase depending if the space is open
+ */
  bool checkOpen (const vector<Token_t>& tokens, Point_t pt);
+
+/*
+ * Description: Does a single sweep checking for open pieces
+ * Return: pair <bool, Move_t>
+ * Pre condtion: The tiger is attempting to move/decide to move
+ * Post condition: returns true if a takeable piece has been found and the move to take it
+ */
  pair<bool, Move_t> singleScan(vector<Token_t> tokens, Point_t pos);
+
+/*
+ * Description: Does a single scan from each spot adjacent to the tiger
+ * Return: pair<bool, Move_t>
+ * Pre condtion: The tiger wants to move and there are no immediately available pieces
+ * Post condition: returns true if a piece can be taken next turn and the move to get closer
+ */
  pair<bool,Move_t> doubleScan(vector<Token_t> tokens);
+
+/*
+ * Description: Begins hunting down remaning pieces
+ * Return: Move_t
+ * Pre condtion: 3 pieces have been taken by the tiger
+ * Post condition: returns a move that gets the tiger closer to taking a piece
+ */
  Move_t huntingMode(vector<Token_t> tokens);
+
+/*
+ * Description: Moves the tiger close to center mass of humans
+ * Return: Move_t
+ * Pre condtion: the tiger is not actively hunting
+ * Post condition: moves the tiger closer to center of humans
+ */
  Move_t groupCenterBias(vector<Token_t> tokens);
- vector<Point_t> getLegalMoveCage(const vector<Token_t>& tokens, Token_t token);
+
+/*
+ * Description: Checks to see if we are trying to illegally cross into cage
+ * Return: Move_t
+ * Pre condtion: The tiger wants to move into the cage illegally
+ * Post condition: returns a random legal move if the move is illegal
+ */
  Move_t checkCageSpots(Move_t move, vector<Token_t> tokens);
  
  inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens, Color_t c) {
-     //srand(1);
+     //srand(11043);
      if (c == RED) {
          return tigerFunction(tokens);
      }
