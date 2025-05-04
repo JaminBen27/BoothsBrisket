@@ -496,7 +496,7 @@ Move_t moveTo(Token_t t, Point_t p) {
     return m;
 }
 Move_t tempo(vector<Token_t> tokens) {
-    vector<Token_t> midRow = getMiddleRow(tokens);
+    vector<Token_t> backRow = getBackRow(tokens);
     Token_t token = getAbsFurthest(tokens);
     if(ENDGAME) {
         vector<Move_t> replaceMoves = getReplacementMoves(tokens);
@@ -506,13 +506,15 @@ Move_t tempo(vector<Token_t> tokens) {
     }
     Move_t m;
     m.token = token;
-    Point_t p1 = {HUMAN_PROGRESSION_ROW+1, token.location.col};
-    Point_t p2 = {HUMAN_PROGRESSION_ROW+2, token.location.col};
-    if(token.location.row == p1.row) {
-        m.destination = p2;
+    for(Token_t t: backRow) {
+        if(!checkHumanAt(tokens,{t.location.row-1,t.location.col})) {
+            m.token = t;
+            m.destination = {t.location.row-1,t.location.col};
+            return m;
+        }
     }
-    else
-        m.destination = p1;
+    m.destination = token.location;
+    m.destination.row++;
     return m;
 }
 Token_t getAbsFurthest(vector<Token_t> tokens) {
