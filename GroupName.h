@@ -1207,7 +1207,7 @@ Move_t pickRandom (const vector<Token_t>& tokens) {
         } else {
             move.destination.row = move.token.location.row - 1;
         }
-    } while (checkLegalMove(tokens, move) == false);
+    } while (checkLegalMove(tokens, move) == false && inCage(move.destination));
     if (reachedCorner) {
         cornerPiece.location = move.destination;
     }
@@ -1233,7 +1233,7 @@ Move_t pickRandom(vector<Token_t> tokens, Move_t move) {
                 move.destination.row--;
             }
         }
-    } while (!checkLegalMove(tokens, move) && inCage(move.destination));
+    } while (!checkLegalMove(tokens, move));
 
     return move;
 }
