@@ -20,8 +20,12 @@
  
  static int TIGERMOVECOUNT = 1;
  bool shimmy = false;
+ bool reversShimmy =false;
  bool reachedCorner = false;
+//shimmy globals
  bool doTempo = false;
+ bool shidtFlex = false;
+ bool protect = true;
  bool inCorner = false;
  Move_t tigerMove = {{RED, {2, 4}}, {2,4}};
  Token_t cornerPiece = {RED, {-1,-1}};
@@ -57,6 +61,7 @@
  //------------------------------------------------------------------
  //------------------------------------------------------------------
  //HUMAN SPECIFIC FUNTIONS
+Move_t getReverseShimmy(vector<Token_t> tokens);
 Move_t diagonalTempo (vector<Token_t> tokens, vector<Token_t> backLine);
  Move_t stalemate(vector<Token_t> tokens, Token_t token);
  bool giveDiag(vector<Token_t> tokens);
@@ -96,7 +101,10 @@ Move_t diagonalTempo (vector<Token_t> tokens, vector<Token_t> backLine);
  int  getHalf(Point_t p);
  vector<Move_t> protectImmediateDanger(vector<Token_t> tokens, DIRECTION d);
  inline DIRECTION checkImmediateDanger(vector<Token_t> tokens);
- //HUMAN END GAME FUNCTIONS
+vector<Token_t> getDiagMove(vector<Token_t> tokens,Token_t tiger);
+bool checkForwardDiagonalMove(vector<Token_t> tokens,Token_t t);
+Move_t getForwardDiagonalMove(vector<Token_t> tokens,Token_t t);
+//HUMAN END GAME FUNCTIONS
  Move_t getEndGameMove(vector<Token_t> tokens, queue<Move_t>& moveList);
  Move_t moveTo(Token_t t, Point_t p);
  vector<Token_t> getBoxHumans(vector<Token_t> tokens);
@@ -227,6 +235,7 @@ Move_t diagonalTempo (vector<Token_t> tokens, vector<Token_t> backLine);
  }
 
  inline Move_t humanFunction(const vector<Token_t>& tokens) {
+     srand(1);
      cout << "Human is thinking" << endl;
      Move_t m;
  
@@ -273,6 +282,9 @@ Move_t diagonalTempo (vector<Token_t> tokens, vector<Token_t> backLine);
      if(shimmy && HUMAN_PROGRESSION_ROW >= 8) {
          return getShimmy(tokens);
      }
+     if(reversShimmy && HUMAN_PROGRESSION_ROW <= 7) {
+         return getReverseShimmy(tokens);
+     }
      if (checkImmediateDanger(tokens) != NONE) {
          temp = (protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
          collectMoves(moveList,temp);
@@ -315,13 +327,18 @@ Move_t diagonalTempo (vector<Token_t> tokens, vector<Token_t> backLine);
          badMove = checkBadMove(tokens,m);
      }
      if (badMove) {
-         if (HUMAN_PROGRESSION_ROW < 6) {
-             return diagonalTempo(tokens, backLine);
+
+         if(HUMAN_PROGRESSION_ROW<=7) {
+             reversShimmy = true;
          }
+         else {
+             shimmy = true;
+             gap = tokens.front().location;
+             flex = tokens.front().location;
+             flex.row += 2;
+         }
+
          m =  tempo(tokens);
-         gap = tokens.front().location;
-         flex = tokens.front().location;
-         flex.row += 2;
      }
      return m;
  }
@@ -343,7 +360,81 @@ Move_t diagonalTempo (vector<Token_t> tokens, vector<Token_t> backLine);
      return moves;
  }
 Move_t getReverseShimmy(vector<Token_t> tokens) {
+     Token_t tiger = tokens[0];
+     tokens.erase(tokens.begin());
+     Move_t m;
+     vector<Token_t> backRow = getBackRow(tokens);
+     Token_t flexPiece = backRow.at(0);
+     for(Token_t t: backRow) {
+         if(dist(t.location,tiger.location) < dist(flexPiece.location,tiger.location)) {
+             flexPiece = t;
+         }
+     }
+     bool right= isTokenRight(flexPiece);
+     int colShift = 0;
+     if(right) {
+         colShift = -1;
+     }
+     vector<Token_t>  diag = getDiagMove(tokens,tiger);
+     Token_t diagPiece;
+     for(Token_t t: diag) {
+         if(isTokenRight(t) == right) {
+             diagPiece = t;
+         }
+     }
+     if(checkForwardDiagonalMove(tokens,diagPiece) && !shidtFlex) {
+         shidtFlex = false;
+         protect = false;
+         doTempo =false;
+         return getForwardDiagonalMove(tokens,diagPiece);
+     }
+     if(protect) {
+         Token_t protectPiece = getHumanAt(tokens,{flexPiece.location.row-2,flexPiece.location.col-1});
+         shidtFlex = true;
+         protect = false;
+         return moveHorz(protectPiece,1-colShift);
+     }
+     if(shidtFlex) {
+         doTempo = true;
+         shidtFlex = false;
+         return  moveHorz(flexPiece,2+colShift);
+     }
+     if(doTempo) {
+         doTempo = false;
+         protect = true;
+         return tempo(tokens);
+     }
+     reversShimmy = false;
+     return getForwardDiagonalMove(tokens,flexPiece);
 
+
+ }
+bool checkForwardDiagonalMove(vector<Token_t> tokens,Token_t t) {
+     bool right= isTokenRight(t);
+     if(right) {
+         bool a =checkHumanAt(tokens,{t.location.row-1,t.location.col-1});
+         return !a;
+     }
+     return !checkHumanAt(tokens,{t.location.row-1,t.location.col+1});
+ }
+Move_t getForwardDiagonalMove(vector<Token_t> tokens,Token_t t) {
+     Move_t m;
+     m.token = t;
+     bool right= isTokenRight(t);
+     int q = getQuadrantFactor(t);
+     m.destination ={t.location.row-1,t.location.col+q};
+     return m;
+ }
+vector<Token_t> getDiagMove(vector<Token_t> tokens,Token_t tiger) {
+     vector<Token_t> diagPieces;
+     for(Token_t t: tokens) {
+         if(t.location.row != HUMAN_PROGRESSION_ROW) {
+             if(onDiag(t)) {
+                 diagPieces.push_back(t);
+             }
+         }
+     }
+     return diagPieces;
  }
  Move_t getShimmy(vector<Token_t> tokens) {
      if (doTempo) {
@@ -765,6 +856,8 @@ Move_t getReverseShimmy(vector<Token_t> tokens) {
      return m;
  }
  Move_t tempo(vector<Token_t> tokens) {
+     if(HUMAN_PROGRESSION_ROW <=6)
+         return diagonalTempo(tokens, getBackRow(tokens));
      cout << "Tempo: ";
      vector<Token_t> backRow = getBackRow(tokens);
      Token_t token = getAbsFurthest(tokens);
@@ -1578,12 +1671,12 @@ Move_t getReverseShimmy(vector<Token_t> tokens) {
      newLocation.token = item;
      switch (direction){
          case 1: // right
-             newLocation.destination.row = ++location.row;
-             newLocation.destination.col = location.col;
+             newLocation.destination.row = location.row;
+             newLocation.destination.col = ++location.col;
              break;
          case 2: //left
-             newLocation.destination.row = --location.row;
-             newLocation.destination.col = location.col;
+             newLocation.destination.row = location.row;
+             newLocation.destination.col = --location.col;
              break;
      }
      return newLocation;
