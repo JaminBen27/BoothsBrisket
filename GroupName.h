@@ -49,10 +49,15 @@ bool isSamePoint(Point_t p1, Point_t p2);
 void printPoint(Point_t p);
 void printMove(Move_t m);
 bool isTokenRight(Token_t tiger);
+int getQuadrantFactor(Token_t token);
 //------------------------------------------------------------------
 //------------------------------------------------------------------
 //------------------------------------------------------------------
 //HUMAN SPECIFIC FUNTIONS
+bool giveDiag(vector<Token_t> tokens);
+vector<Move_t> fixTripleStack(vector<Token_t> tokens, vector<Token_t> stack);
+Move_t getShimmy(vector<Token_t> tokens);
+vector<Token_t> getTripleStackCol(vector<Token_t> tokens);
 Move_t getPhaseOneMove(vector<Token_t> tokens);
 vector<Move_t> getRowOneMoves(vector<Token_t> frontRow, Token_t tiger);
 Move_t pickRandom (const vector<Token_t>& tokens);
@@ -121,6 +126,182 @@ inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens, Color_t c) {
     return humanFunction(tokens);
 }
 
+inline Move_t humanFunction(const vector<Token_t>& tokens) {
+    cout << "Human is thinking" << endl;
+    Move_t m;
+
+
+    queue<Move_t> moveList;
+
+    updateProgressionRow(tokens);
+    if(HUMAN_PROGRESSION_ROW == 3) {
+         m = getEndGameMove(tokens,moveList);
+         m = getEndGameMove(tokens,moveList);
+    }
+    else if (HUMAN_PROGRESSION_ROW>0) {
+        m = getPhaseOneMove(tokens);
+    }
+    if (checkLegalMove(tokens, m)) {
+        return m;
+    }
+    return pickRandom(tokens);
+}
+Move_t getPhaseOneMove(vector<Token_t> tokens) {
+    Move_t m;
+    Token_t token;
+
+    //Stores possible moves that can be made
+    queue<Move_t> moveList;
+    vector<Move_t> temp;
+
+    vector<Token_t> frontLine = getFrontRow(tokens);
+    vector<Token_t> midLine = getMiddleRow(tokens);
+    vector<Token_t> backLine = getBackRow(tokens);
+    vector<Token_t> rowVulnerabilities = updateRowVulnerabilities(tokens, frontLine);
+    vector<Token_t> colVulnerabilities = updateColVulnerabilities(tokens,frontLine);
+
+    updateProgressionRow(tokens);
+
+    //ROW 1 AVOID IMEDIATE DEATH
+    if(HUMAN_PROGRESSION_ROW== 6) {
+        cout << "PROG ROW 6";
+    }
+    if(HUMAN_PROGRESSION_ROW == 10) {
+        temp = getRowOneMoves(midLine,tokens[0]);
+        collectMoves(moveList,temp);
+    }
+    if(shimmy) {
+        return getShimmy(tokens);
+    }
+    if (checkImmediateDanger(tokens) != NONE) {
+        temp = (protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
+        collectMoves(moveList,temp);
+
+    }
+    if (checkImmediateDanger(tokens) != NONE) {
+        temp = (protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
+        collectMoves(moveList,temp);
+    }
+    vector<Token_t> stack;
+    stack = getTripleStackCol(tokens);
+    if(!stack.empty()) {
+        temp = fixTripleStack(tokens,stack);
+        collectMoves(moveList,temp);
+
+        cout << "YAY IT WORKED";
+    }
+    if(!rowVulnerabilities.empty()) {
+        temp = fixRowVuln(tokens,rowVulnerabilities);
+        collectMoves(moveList,temp);
+    }
+    if(!colVulnerabilities.empty()) {
+        temp = fixColVuln(tokens,colVulnerabilities);
+        collectMoves(moveList,temp);
+    }
+    temp = takeDiag(tokens);
+    collectMoves(moveList,temp);
+    temp = getFurthestPieces(tokens,midLine,backLine);
+    collectMoves(moveList,temp);
+    bool badMove = true;
+    while(badMove && moveList.size() > 0) {
+        m = moveList.front();
+        if(isSamePoint(m.destination,{10,3})) {
+            cout << "debig";
+        }
+        if(isSamePoint(m.destination,{10,4})) {
+            cout << "debig";
+        }
+        moveList.pop();
+        badMove = checkBadMove(tokens,m);
+    }
+    if (badMove) {
+        m =  tempo(tokens);
+        shimmy = true;
+        gap = tokens.front().location;
+        flex = tokens.front().location;
+        flex.row += 2;
+    }
+    return m;
+}
+vector<Move_t> getPhaseTwoMove(vector<Token_t> tokens) {
+    vector<Move_t> moves;
+    Move_t m;
+    for(Token_t t: tokens) {
+        if(t.location.row == 5 ) {
+            if(t.location.col <= 2 || t.location.col >=6) {
+                m.token = t;
+                m.destination = {t.location.row-1,t.location.col};
+                moves.push_back(m);
+            }
+        }
+    }
+    if(moves.empty()) {
+        moves = getReplacementMoves(tokens);
+    }
+    return moves;
+}
+bool giveDiag(vector<Token_t> tokens,Move_t m) {
+    Token_t tiger = tokens.at(0);
+    tokens.erase(tokens.begin());
+    if(onDiag(tiger) && onDiag(m.token.location) && dist(tiger.location,m.token.location)) {
+        return true;
+    }
+    return false;
+}
+vector<Move_t> fixTripleStack(vector<Token_t> tokens, vector<Token_t> stack){
+    vector<Token_t> tripleStack;
+    vector<Move_t> moves;
+    Move_t m;
+    //sort tripleStack
+    while(tripleStack.size() <3) {
+        int swapLoc = 0;
+
+        Token_t max= stack.at(0);
+        for(int i=0; i< stack.size(); i++) {
+            if(stack.at(i).location.row < max.location.row) {
+                max = stack.at(i);
+                swap(stack.at(i),stack.at(swapLoc));
+                swapLoc= i;
+            }
+        }
+        tripleStack.push_back(max);
+        stack.erase(stack.begin()+swapLoc);
+    }
+    m.token = tripleStack.at(1);
+    m.destination = tripleStack.at(1).location;
+    if(!checkHumanAt(tokens, {m.token.location.row,m.token.location.col-1})) {
+        m.destination.col --;
+    }
+    else if(!checkHumanAt(tokens, {m.token.location.row,m.token.location.col+1})){
+        m.destination.col ++;
+    }
+    else {
+        return moves;
+    }
+    moves.push_back(m);
+    return moves;
+}
+vector<Token_t> getTripleStackCol(vector<Token_t> tokens) {
+    tokens.erase(tokens.begin());
+    int count= 0;
+    int colCounter=0;
+    vector<Token_t> stack;
+    while(colCounter <= 8) {
+        for(Token_t t: tokens) {
+            if(t.location.col == colCounter) {
+                count++;
+                stack.push_back(t);
+            }
+            if(count == 3) {
+                return stack;
+            }
+        }
+        stack.clear();
+        count =0;
+        colCounter++;
+    }
+    return stack;
+}
 Move_t getShimmy(vector<Token_t> tokens) {
     if (doTempo) {
         doTempo = false;
@@ -198,94 +379,6 @@ Move_t getReverseShimmy(vector<Token_t> tokens) {
         doTempo = false;
         return tempo(tokens);
     }
-}
-
-inline Move_t humanFunction(const vector<Token_t>& tokens) {
-    cout << "Human is thinking" << endl;
-    Move_t m;
-
-
-    queue<Move_t> moveList;
-
-    updateProgressionRow(tokens);
-    if(HUMAN_PROGRESSION_ROW == 3) {
-         m = getEndGameMove(tokens,moveList);
-    }
-    else if (HUMAN_PROGRESSION_ROW>0) {
-        m = getPhaseOneMove(tokens);
-    }
-    if (checkLegalMove(tokens, m)) {
-        return m;
-    }
-    return pickRandom(tokens);
-}
-Move_t getPhaseOneMove(vector<Token_t> tokens) {
-    Move_t m;
-    Token_t token;
-
-    //Stores possible moves that can be made
-    queue<Move_t> moveList;
-    vector<Move_t> temp;
-
-    vector<Token_t> frontLine = getFrontRow(tokens);
-    vector<Token_t> midLine = getMiddleRow(tokens);
-    vector<Token_t> backLine = getBackRow(tokens);
-    vector<Token_t> rowVulnerabilities = updateRowVulnerabilities(tokens, frontLine);
-    vector<Token_t> colVulnerabilities = updateColVulnerabilities(tokens,frontLine);
-
-    updateProgressionRow(tokens);
-
-    //ROW 1 AVOID IMEDIATE DEATH
-    if(HUMAN_PROGRESSION_ROW == 10) {
-        temp = getRowOneMoves(midLine,tokens[0]);
-        collectMoves(moveList,temp);
-    }
-    if(shimmy) {
-        return getShimmy(tokens);
-    }
-    if (checkImmediateDanger(tokens) != NONE) {
-        temp = (protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
-        collectMoves(moveList,temp);
-
-    }
-    if (checkImmediateDanger(tokens) != NONE) {
-        temp = (protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
-        collectMoves(moveList,temp);
-    }
-    if(!rowVulnerabilities.empty()) {
-        temp = fixRowVuln(tokens,rowVulnerabilities);
-        collectMoves(moveList,temp);
-    }
-    if(!colVulnerabilities.empty()) {
-        temp = fixColVuln(tokens,colVulnerabilities);
-        collectMoves(moveList,temp);
-    }
-    temp = getFurthestPieces(tokens,midLine,backLine);
-    collectMoves(moveList,temp);
-    bool badMove = true;
-    while(badMove && moveList.size() > 0) {
-        m = moveList.front();
-        if(isSamePoint(m.destination,{10,3})) {
-            cout << "debig";
-        }
-        if(isSamePoint(m.destination,{10,4})) {
-            cout << "debig";
-        }
-        moveList.pop();
-        badMove = checkBadMove(tokens,m);
-    }
-    if (badMove) {
-        m =  tempo(tokens);
-        shimmy = true;
-        gap = tokens.front().location;
-        flex = tokens.front().location;
-        flex.row += 2;
-    }
-    return m;
-}
-vector<Move_t> getRowTwoHardCode(vector<Token_t> tokens) {
-    vector<pair<Point_t,Point_t>> sequence { {{10,3},{9,3}},  };
-    vector<Move_t> moves;
 }
 vector<Move_t> getRowOneMoves(vector<Token_t> midRow, Token_t tiger) {
     bool right = isTokenRight(tiger);
@@ -491,19 +584,36 @@ vector<Move_t> getReplacementMoves(vector<Token_t> tokens) {
     }
     return listMoves;
 }
+int getQuadrantFactor(Token_t token) {
+    Point_t p= token.location;
+    if(p.row > 8 && p.col >=4) {
+        return 1;
+    }
+    if(p.row > 8 && p.col < 4) {
+        return -1;
+    }
+    if(p.row <= 8 && p.col >=4) {
+        return -1;
+    }
+    if(p.row >= 8 && p.col < 4) {
+        return +1;
+    }
+    cout << "ERROR IN GETQUADRANT" << endl;
+    return 0;
+}
 Move_t moveTo(Token_t t, Point_t p) {
     Move_t m;
     m.token = t;
-    // if(onDiag(t) && onDiag(p) && dist(t.location,p) == sqrt(2)) {
-    //     m.destination = p;
-    // }
-    // if(onDiag(t) && onDiag(p) && dist(t.location,p) == sqrt(8)) {
-    //
-    //     m.destination.row = p.row;
-    //     if(isTokenRight(t)) {
-    //         m.destination.col
-    //     }
-    // }
+    if(onDiag(t) && onDiag(p) && dist(t.location,p) == sqrt(2)) {
+        m.destination = p;
+        return m;
+    }
+    if(onDiag(t) && onDiag(p) && dist(t.location,p) == sqrt(8)) {
+
+        m.destination.row = p.row;
+        m.destination.col = p.col -getQuadrantFactor(t);
+        return m;
+    }
     if(!inCage(t.location)) {
         if(t.location.row == p.row) {
             if(t.location.col > p.col) {
@@ -672,10 +782,14 @@ vector<Token_t> updateRowVulnerabilities(vector<Token_t> tokens, vector<Token_t>
 
 bool checkBadMove(vector<Token_t> tokens, Move_t m) {
     //2 bools for easier debugging
+
     bool selfSac = checkSelfSacrifice(tokens,m.token,m.destination);
     bool sac = checkSacrifice(tokens,m.token,m.destination);
-    if(selfSac || sac || !checkLegalMove(tokens,m)) {
-        SACMOVES.push_back(m);
+    bool gDiag = giveDiag(tokens,m);
+    if(gDiag) {
+        cout << "giveDiag Triggered";
+    }
+    if(selfSac || sac || gDiag || !checkLegalMove(tokens,m)) {
         return true;
     }
     return false;
@@ -749,8 +863,11 @@ vector<Move_t> takeDiag(vector<Token_t> tokens) {
     vector<Point_t> diagSpots = availableDiag(tokens);
     for(Point_t p: diagSpots) {
         for(Token_t t: tokens) {
-            if(dist(t.location,p) == sqrt(2) && onDiag(t)) {
-                m = moveTo(t,p);
+            if(isSamePoint(tiger.location, {p.row-1,p.col})) {
+                if(dist(t.location,p) == sqrt(2) && onDiag(t)) {
+                    m = moveTo(t,p);
+                    moves.push_back(m);
+                }
             }
             else if(t.location.col == p.col && t.location.row == p.row+1) {
                 m.token = t;
@@ -991,7 +1108,7 @@ Move_t pickRandom(vector<Token_t> tokens, Move_t move) {
                 move.destination.row--;
             }
         }
-    } while (checkLegalMove(tokens, move) == false);
+    } while (!checkLegalMove(tokens, move) && inCage(move.destination));
 
     return move;
 }
@@ -1002,59 +1119,69 @@ inline Move_t tigerFunction(const vector<Token_t>& tokens) {
     int random = rand();
 
     // //BENS TESTING ALG
-    //
-    //  vector<Point_t> p;
-    // p = getLegalMoveCage(tokens,tigerToken);
-    // random = random%p.size();
-    // move.destination = p[random];
-    // return move;
-    //Temporary fix for picking left or right randomly
-     if (random % 2 == 0){
-         random = 1;
-     } else {
-         random = 4;
-     }
-     if (TIGERMOVECOUNT <= 5) {
 
-         if (TIGERMOVECOUNT == 1) {
-             move = moveDiag(tigerToken, 4);
-         }
-         else if (TIGERMOVECOUNT == 2){
-             move = moveDiag(tigerToken, 1);
-         }
-         else if (TIGERMOVECOUNT >= 3 && TIGERMOVECOUNT <= 5) {
-             move = moveDiag(tigerToken, random);
-         }
-     }
-     if ((tokens.size() -1 > 14) && TIGERMOVECOUNT >= 6) {
-         pair<bool, Move_t> scanning = singleScan(tokens, tigerToken.location);
-         pair<bool, Move_t> secondScan = doubleScan(tokens);
-         if (scanning.first == true) {
-             move.destination = scanning.second.destination;
-             if (isOccupied(tokens, move.destination)) {
-                 if (checkOpen(tokens, move.destination)) {
-                     Point_t mir = mirror(move.destination, tigerToken.location);
-                     move = takeHuman(tigerToken, tokens, mir);
-                 } else {
-                     move = pickRandom(tokens, move);
-                 }
-             }
-         } else if (secondScan.first == true) {
-             move.destination = secondScan.second.destination;
-         } else {
-             move = groupCenterBias(tokens);
-         }
-     }
-     else if (tokens.size() - 1 < 15) {
-         move = huntingMode(tokens);
-     }
-     TIGERMOVECOUNT++;
-     if ( inBounds(move.destination) && ! isOccupied(tokens, move.destination)) {
-         move = checkCageSpots(move, tokens);
-         return move;
-     }
-         move = pickRandom(tokens, move);
-         return move;
+     vector<Point_t> p;
+    if(inCage(tigerToken.location)) {
+        p = getLegalMovesCage(tokens,tigerToken);
+    }
+    else {
+        p = getLegalMovesSquare(tokens,tigerToken);
+    }
+    random = random%p.size();
+    move.destination = p[random];
+    return move;
+    //Temporary fix for picking left or right randomly
+
+
+
+
+
+     // if (random % 2 == 0){
+     //     random = 1;
+     // } else {
+     //     random = 4;
+     // }
+     // if (TIGERMOVECOUNT <= 5) {
+     //
+     //     if (TIGERMOVECOUNT == 1) {
+     //         move = moveDiag(tigerToken, 4);
+     //     }
+     //     else if (TIGERMOVECOUNT == 2){
+     //         move = moveDiag(tigerToken, 1);
+     //     }
+     //     else if (TIGERMOVECOUNT >= 3 && TIGERMOVECOUNT <= 5) {
+     //         move = moveDiag(tigerToken, random);
+     //     }
+     // }
+     // if ((tokens.size() -1 > 14) && TIGERMOVECOUNT >= 6) {
+     //     pair<bool, Move_t> scanning = singleScan(tokens, tigerToken.location);
+     //     pair<bool, Move_t> secondScan = doubleScan(tokens);
+     //     if (scanning.first == true) {
+     //         move.destination = scanning.second.destination;
+     //         if (isOccupied(tokens, move.destination)) {
+     //             if (checkOpen(tokens, move.destination)) {
+     //                 Point_t mir = mirror(move.destination, tigerToken.location);
+     //                 move = takeHuman(tigerToken, tokens, mir);
+     //             } else {
+     //                 move = pickRandom(tokens, move);
+     //             }
+     //         }
+     //     } else if (secondScan.first == true) {
+     //         move.destination = secondScan.second.destination;
+     //     } else {
+     //         move = groupCenterBias(tokens);
+     //     }
+     // }
+     // else if (tokens.size() - 1 < 15) {
+     //     move = huntingMode(tokens);
+     // }
+     // TIGERMOVECOUNT++;
+     // if ( inBounds(move.destination) && ! isOccupied(tokens, move.destination)) {
+     //     move = checkCageSpots(move, tokens);
+     //     return move;
+     // }
+     //     move = pickRandom(tokens, move);
+     //     return move;
 }
 
 bool onDiag(Token_t token){
