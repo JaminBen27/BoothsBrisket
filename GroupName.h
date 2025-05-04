@@ -207,8 +207,7 @@
  Move_t checkCageSpots(Move_t move, vector<Token_t> tokens);
  
  inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens, Color_t c) {
-     //srand(11043);
-     //srand(53);
+
      if (c == RED) {
          return tigerFunction(tokens);
      }
@@ -374,11 +373,6 @@
      if (checkImmediateDanger(tokens) != NONE) {
          temp = (protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
          collectMoves(moveList,temp);
- 
-     }
-     if (checkImmediateDanger(tokens) != NONE) {
-         temp = (protectImmediateDanger(tokens, checkImmediateDanger(tokens)));
-         collectMoves(moveList,temp);
      }
      vector<Token_t> stack;
      stack = getTripleStackCol(tokens);
@@ -424,6 +418,7 @@
      }
      return m;
  }
+
  vector<Move_t> getPhaseTwoMove(vector<Token_t> tokens) {
      vector<Move_t> moves;
      Move_t m;
@@ -606,12 +601,14 @@
          case RIGHT:
              move.token.location.col++;
          break;
-         case UP:
-             move.token.location.row--;
+         case DOWN:
+             move.token.location.row++;
+         break;
      }
-     move.destination = mirror(move.token.location, tiger.location);
-     move.token.location = move.destination;
-     move.token.location.row++;
+
+         move.destination = mirror(move.token.location, tiger.location);
+         move.token.location = move.destination;
+         move.token.location.row++;
  
      if (checkLegalMove(tokens, move)) {
          moves.push_back(move);
