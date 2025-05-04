@@ -65,7 +65,7 @@ Move_t diagonalTempo (vector<Token_t> tokens, vector<Token_t> backLine);
  vector<Token_t> getTripleStackCol(vector<Token_t> tokens);
  Move_t getPhaseOneMove(vector<Token_t> tokens);
  vector<Move_t> getRowOneMoves(vector<Token_t> frontRow, Token_t tiger);
- Move_t pickRandom (const vector<Token_t>& tokens);
+ Move_t pickRandom (const vector<Token_t> tokens);
  Move_t humanFunction(const vector<Token_t>& tokens );
  bool checkAdj(Token_t tiger, Point_t p);
  bool checkSelfSacrifice(vector<Token_t> tokens, Token_t human, Point_t newLocation);
@@ -222,6 +222,7 @@ Move_t diagonalTempo (vector<Token_t> tokens, vector<Token_t> backLine);
      if (cornerPiece.color == RED) {
          cornerPiece = getAbsFurthest(tokens);
      }
+
      return stalemate(tokens, cornerPiece);
  }
 
@@ -571,8 +572,8 @@ Move_t getReverseShimmy(vector<Token_t> tokens) {
      tokens.erase(tokens.begin());
  
  
-     //Point_t up = {tiger.location.row - 1, tiger.location.col};
-     //Point_t down = {tiger.location.row + 1, tiger.location.col};
+     Point_t up = {tiger.location.row - 1, tiger.location.col};
+     Point_t down = {tiger.location.row + 1, tiger.location.col};
  
      Point_t left = {tiger.location.row, tiger.location.col - 1};
      Point_t right = {tiger.location.row, tiger.location.col + 1};
@@ -583,6 +584,12 @@ Move_t getReverseShimmy(vector<Token_t> tokens) {
          }
          if (t.location == right) {
              return RIGHT;
+         }
+         if (t.location == up) {
+             return UP;
+         }
+         if (t.location == down) {
+             return DOWN;
          }
      }
      return NONE;
@@ -601,8 +608,8 @@ Move_t getReverseShimmy(vector<Token_t> tokens) {
          case RIGHT:
              move.token.location.col++;
          break;
-         default:
-             break;
+         case UP:
+             move.token.location.row--;
      }
      move.destination = mirror(move.token.location, tiger.location);
      move.token.location = move.destination;
@@ -985,6 +992,8 @@ Move_t getReverseShimmy(vector<Token_t> tokens) {
          cornerPiece = move.token;
          move = pickRandom({token});
      }
+
+     return move;
  }
  
  
@@ -1271,7 +1280,7 @@ Move_t getReverseShimmy(vector<Token_t> tokens) {
  }
  
  //HUMANS RANDOM
- Move_t pickRandom (const vector<Token_t>& tokens) {
+ Move_t pickRandom (const vector<Token_t> tokens) {
      Move_t move;
      do {
          do {
@@ -1286,11 +1295,14 @@ Move_t getReverseShimmy(vector<Token_t> tokens) {
          int direction = rand() % 4;
          if (direction == 0) {
              move.destination.col = move.token.location.col + 1;
-         } else if (direction == 1) {
+         }
+         else if (direction == 1) {
              move.destination.col = move.token.location.col - 1;
-         } else if (direction == 2) {
+         }
+         else if (direction == 2) {
              move.destination.row = move.token.location.row + 1;
-         } else {
+         }
+         else {
              move.destination.row = move.token.location.row - 1;
          }
      } while (checkLegalMove(tokens, move) == false);
