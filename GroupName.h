@@ -130,6 +130,14 @@ Move_t getShimmy(vector<Token_t> tokens) {
     tokens.erase(tokens.begin());
     Move_t move;
 
+    if (dist(tiger.location, gap) > 2 && gap.col == flex.col) {
+        move.token = {BLUE, gap};
+        move.destination = move.token.location;
+        move.token.location.row++;
+        shimmy = false;
+        return move;
+    }
+
     //Set destination to pocket
     move.destination = gap;
     move.token = {BLUE, move.destination};
@@ -185,6 +193,13 @@ Move_t getShimmy(vector<Token_t> tokens) {
     return move;
 }
 
+Move_t getReverseShimmy(vector<Token_t> tokens) {
+    if (doTempo) {
+        doTempo = false;
+        return tempo(tokens);
+    }
+}
+
 inline Move_t humanFunction(const vector<Token_t>& tokens) {
     cout << "Human is thinking" << endl;
     Move_t m;
@@ -197,7 +212,7 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
          m = getEndGameMove(tokens,moveList);
     }
     else if (HUMAN_PROGRESSION_ROW>0) {
-        m =getPhaseOneMove(tokens);
+        m = getPhaseOneMove(tokens);
     }
     if (checkLegalMove(tokens, m)) {
         return m;
@@ -496,6 +511,7 @@ Move_t moveTo(Token_t t, Point_t p) {
     return m;
 }
 Move_t tempo(vector<Token_t> tokens) {
+    cout << "Tempo: ";
     vector<Token_t> backRow = getBackRow(tokens);
     Token_t token = getAbsFurthest(tokens);
     if(ENDGAME) {
