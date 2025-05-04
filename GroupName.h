@@ -124,7 +124,7 @@ vector<Point_t> getLegalMoveCage(const vector<Token_t>& tokens, Token_t token);
 Move_t checkCageSpots(Move_t move, vector<Token_t> tokens);
 
 inline Move_t Move_BoothsBrisket(const vector<Token_t>& tokens, Color_t c) {
-    srand(1);
+    //srand(1);
     if (c == RED) {
         return tigerFunction(tokens);
     }
@@ -418,86 +418,7 @@ vector<Token_t> getTripleStackCol(vector<Token_t> tokens) {
     }
     return stack;
 }
-Move_t getShimmy(vector<Token_t> tokens) {
-    if (doTempo) {
-        doTempo = false;
-        return tempo(tokens);
-    }
-    Token_t tiger = tokens[0];
-    tokens.erase(tokens.begin());
-    Move_t move;
 
-    if (dist(tiger.location, gap) > 2 && gap.col == flex.col) {
-        move.token = {BLUE, gap};
-        move.destination = move.token.location;
-        move.token.location.row++;
-        shimmy = false;
-        return move;
-    }
-
-    //Set destination to pocket
-    move.destination = gap;
-    move.token = {BLUE, move.destination};
-
-    //Pick closer diagonal to move to
-    bool left = false;
-    if (gap.col <= 4) {
-        left = true;
-    }
-    if (onDiag(flex) == false && flex.col != gap.col) {
-        doTempo = true;
-        move.token = {BLUE, flex};
-        move.destination = flex;
-        if (left) {
-            move.destination.col--;
-            flex.col--;
-        }
-        else {
-            move.destination.col++;
-            flex.col++;
-        }
-        return move;
-    }
-
-    if (onDiag(move.destination)) {
-        diagCount++;
-        if (diagCount == 2) {
-            diagCount = 0;
-            shimmy = false;
-        }
-        move.token.location.row++;
-        gap.row++;
-        if (left) {
-            gap.col++;
-            move.token.location.col++;
-        }
-        else {
-            gap.col--;
-            move.token.location.col--;
-        }
-        return move;
-    }
-
-
-    if (left) {
-        move.token.location.col--;
-    }
-    else {
-        move.token.location.col++;
-    }
-    gap = move.token.location;
-
-    return move;
-}
-
-Move_t getReverseShimmy(vector<Token_t> tokens) {
-    if (doTempo) {
-        doTempo = false;
-        return tempo(tokens);
-    }
-
-    return moves;
-}
 vector<Move_t> getRowOneMoves(vector<Token_t> midRow, Token_t tiger) {
     bool right = isTokenRight(tiger);
     vector<Move_t> moves;
@@ -972,7 +893,12 @@ Move_t stalemate (vector<Token_t> tokens, Token_t token) {
     if (dist(cornerPiece.location, tigerMove.destination) == 1) {
         return mirror();
     }
-    return pickRandom({token});
+    Move_t move = pickRandom({token});
+
+    while (checkSelfSacrifice(tokens, move.token, move.destination)) {
+        cornerPiece = move.token;
+        move = pickRandom({token});
+    }
 }
 
 
