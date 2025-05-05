@@ -711,12 +711,14 @@ if (c == RED) {
  tigerMove.token.location = tigerMove.destination;
  tigerMove.destination = tokens.front().location;
 
- if (tokens.size() > 14) {
+ if (tokens.size() > 18) {
      return humanFunction(tokens);
  }
+    /*
  if (cornerPiece.color == RED) {
      cornerPiece = getAbsFurthest(tokens);
  }
+ */
  Move_t schlong = stalemate(tokens, cornerPiece);
  if (checkLegalMove(tokens, schlong)) {
      return schlong;
