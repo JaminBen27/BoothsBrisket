@@ -744,6 +744,7 @@ inline Move_t humanFunction(const vector<Token_t>& tokens) {
             return m;
         }
     } catch (exception& e) {
+        cout << "Exception: " << e.what() << endl;
         return pickRandom(tokens);
     }
  return pickRandom(tokens);
