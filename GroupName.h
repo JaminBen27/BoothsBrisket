@@ -1154,16 +1154,22 @@ vector<Token_t> getDiagMove(vector<Token_t> tokens,Token_t tiger) {
  
      for (Token_t t : tokens) {
          if (t.location == left) {
+             if (checkHumanAt(tokens, {down.row, down.col - 1}) == false)
              return LEFT;
          }
          if (t.location == right) {
-             return RIGHT;
+             if (checkHumanAt(tokens, {down.row, down.col + 1}) == false) {
+                 return RIGHT;
+             }
          }
          if (t.location == up) {
+             if (checkHumanAt(tokens, {down.row - 1, down.col}) == false) {}
              return UP;
          }
          if (t.location == down) {
-             return DOWN;
+             if (checkHumanAt(tokens, {down.row + 1, down.col}) == false) {
+                 return DOWN;
+             }
          }
      }
      return NONE;
